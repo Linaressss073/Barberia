@@ -1,0 +1,62 @@
+# Infraestructura como código para Render.
+# Crea/actualiza el Web Service NestJS y la base PostgreSQL administrada.
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: barberia-db
+    plan: free                # Cambiar a 'starter'/'standard' en PROD.
+    databaseName: barberia
+    user: barberia
+    postgresMajorVersion: 16
+    ipAllowList: []           # Solo accesible internamente desde Render.
+
+services:
+  - type: web
+    name: barberia-backend
+    runtime: node
+    plan: free                # Cambiar a 'starter' en PROD.
+    region: oregon
+    branch: main
+    rootDir: barberia-backend
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run migration:run
+    startCommand: node dist/main.js
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: APP_NAME
+        value: barberia-backend
+      - key: APP_VERSION
+        value: 0.1.0
+      - key: GLOBAL_PREFIX
+        value: api/v1
+      - key: FRONTEND_URL
+        sync: false           # Configurar en dashboard según dominio del frontend.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: barberia-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: true
+      - key: DATABASE_LOGGING
+        value: false
+      - key: DATABASE_POOL_MAX
+        value: 10
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 900s
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_TTL
+        value: 7d
+      - key: BCRYPT_SALT_ROUNDS
+        value: 12
+      - key: THROTTLE_TTL_MS
+        value: 60000
+      - key: THROTTLE_LIMIT
+        value: 100

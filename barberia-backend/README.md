@@ -89,7 +89,9 @@ Pasos:
 2. En Render → **New → Blueprint** → seleccionar el repo.
 3. Render leerá `render.yaml` y aprovisionará DB + Web Service.
 4. Configurar manualmente `FRONTEND_URL` (no se puede inferir).
-5. El `preDeployCommand` ejecuta `migration:run` **antes** del cambio de tráfico (si falla, el deploy se aborta y el tráfico permanece en la versión anterior). El `startCommand` ya **no** corre migraciones.
+5. **Migraciones**:
+   - **Free tier** (actual): `startCommand: npm run migration:run && node dist/main.js`. Si la migración falla, el server no arranca y el deploy queda marcado como failed.
+   - **Starter o superior**: mover `npm run migration:run` al campo `preDeployCommand` para que se ejecute **antes** del switch de tráfico (zero-downtime si falla).
 6. Health check apunta a `/api/v1/health`.
 
 Variables generadas automáticamente: `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `DATABASE_URL`.

@@ -19,8 +19,12 @@ services:
     branch: main
     rootDir: barberia-backend
     buildCommand: npm ci && npm run build
-    preDeployCommand: npm run migration:run
-    startCommand: node dist/main.js
+    # NOTA: en free tier no se permite `preDeployCommand`. Las migraciones se
+    # ejecutan en el startCommand encadenadas con `&&`: si fallan, el proceso
+    # no arranca y Render marca el deploy como failed.
+    # Al subir a `starter` o superior, mover `npm run migration:run` a
+    # `preDeployCommand` para evitar downtime en migraciones rotas.
+    startCommand: npm run migration:run && node dist/main.js
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:

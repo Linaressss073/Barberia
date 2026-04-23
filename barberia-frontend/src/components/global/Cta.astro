@@ -1,0 +1,73 @@
+---
+// Assets
+import { Image } from "astro:assets";
+// Fundations
+import Text from "@/components/fundations/elements/Text.astro";
+import Button from "@/components/fundations/elements/Button.astro";
+import Wrapper from "@/components/fundations/containers/Wrapper.astro";
+const ads = [
+  {
+    title: "Lexington Themes",
+    event: "lexingtonAdd",
+    href: "https://lexingtonthemes.com/",
+    imgSrc: "https://www.colorsandfonts.com/images/lexington.png",
+    description:
+      "The biggest Astro collection with 43 premium themes. Clean code. Modern design. Easy to customize. Production-ready. Trusted by 8,000+ freelancers, startups, and agencies — Awarded by Astro.",
+  },
+  {
+    title: "Oxbow UI",
+    event: "oxbowAdd",
+    href: "https://oxbowui.com/",
+    imgSrc: "https://www.colorsandfonts.com/images/oxbow.png",
+    description:
+      "Oxbow UI is Open Source.427 Tailwind CSS & Alpine JS blocks — MIT-licensed and production-ready. Copy paste, fork it, remix it, ship it,enjoy it, share it.",
+  },
+];
+---
+
+<section>
+  <Wrapper variant="standard" class="py-20">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+      {
+        ads.map((ad) => (
+          <div class="group relative  ring-4 ring-base-50 border border-base-200 cursor-pointer   rounded-2xl overflow-hidden">
+            <a href={ad.href} class="absolute inset-0" />
+            <div class="flex flex-col items-start justify-between h-full ">
+              <Image
+                alt={ad.description}
+                width={400}
+                height={240}
+                class="block w-full h-full  cursor-pointer overflow-hidden  object-cover  aspect-[16/8] object-top"
+                src={ad.imgSrc}
+                style={{ color: "transparent" }}
+              />
+              <div class="p-8 bg-white border-b border-base-200 order-first h-full flex flex-col justify-between gap-8">
+                <div>
+                  <Text
+                    tag="h3"
+                    variant="textLG"
+                    class="font-medium text-base-900"
+                  >
+                    {ad.title}
+                  </Text>
+                  <Text tag="p" variant="textBase" class="text-base-500 mt-1">
+                    {ad.description}
+                  </Text>
+                </div>
+                <Button
+                  isLink
+                  size="sm"
+                  variant="default"
+                  href={ad.href}
+                  class="w-fit"
+                >
+                  Visit {ad.title}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </Wrapper>
+</section>

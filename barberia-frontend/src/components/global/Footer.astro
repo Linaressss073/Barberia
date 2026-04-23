@@ -1,0 +1,101 @@
+---
+// Assets
+import Logo from "@/components/assets/Logo.astro";
+// Fundations
+import Text from "@/components/fundations/elements/Text.astro";
+import Wrapper from "@/components/fundations/containers/Wrapper.astro";
+const sections = [
+  {
+    title: "All pages",
+    links: [
+      { name: "Home", href: "/" },
+      { name: "Terms", href: "/terms" },
+      { name: "Sign up", href: "/signup" },
+      { name: "Sign In", href: "/signup" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      {
+        name: "GitHub repo",
+        href: "https://github.com/michael-andreuzza/astrosaas",
+      },
+    ],
+  },
+  {
+    title: "More themes",
+    links: [
+      {
+        name: "Lexington Themes",
+        href: "https://lexingtonthemes.com/",
+      },
+    ],
+  },
+  {
+    title: "Socials",
+    links: [
+      {
+        name: "@lexingtonthemes",
+        href: "https://x.com/lexingtonthemes",
+      },
+      {
+        name: "@Mike_Andreuzza",
+        href: "https://x.com/Mike_Andreuzza",
+      },
+    ],
+  },
+];
+const currentYear = new Date().getFullYear();
+---
+
+<footer>
+  <Wrapper variant="standard" class="py-12">
+    <div class="grid grid-cols-2 lg:grid-cols-4 items-start gap-x-8 gap-y-24">
+      <a href="/">
+        <Logo class="textBase font-medium" />
+      </a>
+      <div
+        class="grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-4 lg:col-span-3"
+      >
+        {
+          sections.map(({ title, links }) => (
+            <div>
+              <Text
+                tag="h3"
+                variant="textSM"
+                class=" text-base-900 font-medium uppercase"
+              >
+                {title}
+              </Text>
+              <ul role="list" class="mt-4 space-y-1">
+                {links.map(({ name, href }) => (
+                  <li>
+                    <a
+                      href={href}
+                      class="text-sm font-medium text-base-500 hover:text-accent-600"
+                    >
+                      {name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="border-t pt-6 border-base-200 mt-8">
+      <p class="text-xs text-base-500 lg:col-span-2">
+        © {currentYear} Lexington Themes. All rights reserved. The biggest Astro
+        collection with premium themes. Clean code. Modern design. Easy to customize.
+        Production-ready. Trusted by 8,000+ freelancers, startups, and agencies —
+        Awarded by Astro. A side project by <a
+          class="text-sm text-black hover:text-accent-700 underline"
+          href="https://michaelandreuzza.com/">Michael Andreuzza</a
+        > This website was built with Astro &amp; Tailwind. Crafted in Åland Islands,
+        Finland.
+      </p>
+    </div>
+  </Wrapper>
+</footer>

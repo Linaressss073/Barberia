@@ -1,0 +1,264 @@
+---
+// Fundations
+import Text from "@/components/fundations/elements/Text.astro";
+import Button from "@/components/fundations/elements/Button.astro";
+import Wrapper from "@/components/fundations/containers/Wrapper.astro";
+// Icons
+import Check from "@/components/fundations/icons/Check.astro";
+const pricingTiers = [
+  {
+    name: "Core",
+    subtitle: "For small teams and founders",
+    description:
+      "Everything you need to centralize leads, keep follow-ups on time, and stay organized.",
+    monthlyPrice: "$29.00",
+    annualPrice: "$19.00",
+    features: [
+      "Up to 1,500 contacts across 2 pipelines",
+      "Kanban board with stage automations",
+      "Gmail/Outlook and calendar sync",
+      "Tasks, reminders, and SLA timers",
+      "Standard reports and exports",
+      "Email and community support",
+    ],
+    cta: "Start Core",
+    buttonVariant: "default",
+    isPopular: false,
+    bgClass: "bg-base-50 ring-4 ring-base-50",
+    textClass: "text-base-900",
+    priceClass: "text-base-900",
+    descClass: "text-base-500",
+  },
+  {
+    name: "Momentum",
+    subtitle: "For scaling revenue teams",
+    description:
+      "Automation, shared inbox, and forecasting to keep every deal moving across the team.",
+    monthlyPrice: "$49.00",
+    annualPrice: "$39.00",
+    features: [
+      "Up to 15,000 contacts and 5 pipelines",
+      "Automation workflows and sequences",
+      "Shared inbox with collision detection",
+      "Custom fields, views, and dashboards",
+      "Forecasting and revenue analytics",
+      "API, webhooks, and priority support",
+    ],
+    cta: "Upgrade to Momentum",
+    buttonVariant: "muted",
+    isPopular: true,
+    bgClass: "bg-accent-950 ring-4 ring-accent-50",
+    textClass: "text-white",
+    priceClass: "text-white",
+    descClass: "text-base-200",
+  },
+  {
+    name: "Growth",
+    subtitle: "For established sales orgs",
+    description:
+      "Enterprise-ready controls with dedicated guidance for complex, multi-team pipelines.",
+    monthlyPrice: "$99.00",
+    annualPrice: "$79.00",
+    features: [
+      "Unlimited contacts, pipelines, and seats",
+      "Advanced permissions and SSO",
+      "Two-way data syncs and enrichment",
+      "Playbooks with approval workflows",
+      "Dedicated success manager",
+      "Exports, audit logs, and SLA-backed support",
+    ],
+    cta: "Talk to sales",
+    buttonVariant: "default",
+    isPopular: false,
+    bgClass: "bg-base-50 ring-4 ring-base-50",
+    textClass: "text-base-900",
+    priceClass: "text-base-900",
+    descClass: "text-base-500",
+  },
+];
+---
+
+<section id="pricing">
+  <Wrapper variant="standard" class="py-20">
+    <div class="max-w-xl text-center mx-auto">
+      <Text
+        tag="span"
+        variant="textSM"
+        class="leading-normal font-bold uppercase text-accent-700"
+      >
+        pricing
+      </Text>
+      <Text
+        tag="h2"
+        variant="displayMD"
+        class="tracking-tight mt-4 font-semibold text-base-900"
+      >
+        CRM pricing for every stage
+      </Text>
+      <Text
+        tag="p"
+        variant="textBase"
+        class="mt-4 text-base-500 font-medium text-balance"
+      >
+        From founder-led sales to multi-team RevOps, pick the plan that keeps
+        deals moving.
+      </Text>
+      <div
+        aria-labelledby="pricing-toggle"
+        class="w-full relative mt-8 ring-1 ring-base-200 ring-offset-2 bg-white overflow-hidden justify-center gap-4 mx-auto lg:mx-0 inline-flex p-1 rounded-md max-w-52 shadow z-0"
+      >
+        <div
+          id="pricing-indicator"
+          class="absolute inset-0 bg-accent-950 rounded-md transition-transform duration-200 ease-in-out w-1/2 translate-x-0"
+        >
+        </div>
+        <button
+          id="monthly-pricing-button"
+          class="relative flex items-center justify-center w-full px-2 h-6 text-xs font-medium focus:outline-none transition-colors duration-300 z-10 text-white"
+          type="button"
+          aria-pressed="true"
+        >
+          Monthly
+        </button>
+        <button
+          id="annual-pricing-button"
+          class="relative flex items-center justify-center w-full px-2 h-6 text-xs font-medium focus:outline-none transition-colors duration-300 z-10 text-base-500 hover:text-accent-500"
+          type="button"
+          aria-pressed="false"
+        >
+          Annual
+        </button>
+      </div>
+    </div>
+    <div
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-12 mx-auto"
+    >
+      {
+        pricingTiers.map((tier, index) => (
+          <div
+            class={`flex flex-col h-full p-1 lg:py-1 rounded-3xl ${tier.bgClass} border border-base-200`}
+          >
+            <div
+              class={`p-8 ${tier.isPopular ? "bg-white/5" : "bg-white"} rounded-[1.3rem] flex flex-col justify-between`}
+            >
+              <div>
+                <div class="flex items-start justify-between w-full">
+                  <div>
+                    <Text
+                      tag="h3"
+                      variant="textBase"
+                      class={`font-medium ${tier.textClass}`}
+                    >
+                      {tier.name}
+                    </Text>
+                    <Text tag="p" variant="textSM" class={`${tier.descClass}`}>
+                      {tier.subtitle}
+                    </Text>
+                  </div>
+                  {tier.isPopular && (
+                    <span class="inline-flex items-center font-medium relative text-accent-800 bg-white px-2.5 py-1 text-xs rounded-md">
+                      Popular
+                    </span>
+                  )}
+                </div>
+                <Text
+                  tag="p"
+                  variant="textSM"
+                  class={` mt-4 ${tier.descClass}`}
+                >
+                  {tier.description}
+                </Text>
+                <Button
+                  variant={tier.buttonVariant}
+                  size="base"
+                  class="w-full mt-12"
+                >
+                  {tier.cta}
+                </Button>
+              </div>
+            </div>
+            <div class="p-8 flex flex-col  ">
+              <Text
+                tag="p"
+                variant="displayMD"
+                class={`font-medium flex  items-baseline  ${tier.priceClass}`}
+              >
+                <span
+                  id={`price-amount-${index}`}
+                  data-monthly={tier.monthlyPrice}
+                  data-annual={tier.annualPrice}
+                >
+                  {tier.monthlyPrice}
+                </span>
+                <span
+                  class={`text-sm font-normal  tracking-normal ${tier.isPopular ? "text-white/70" : "text-base-500"}`}
+                >
+                  <span id={`billing-monthly-${index}`}>/month</span>
+                  <span id={`billing-annual-${index}`} class="hidden">
+                    /annually
+                  </span>
+                </span>
+              </Text>
+              <div class="mt-12">
+                <Text
+                  tag="p"
+                  variant="textSM"
+                  class={`font-medium uppercase ${tier.descClass}`}
+                >
+                  {tier.name} plan includes:
+                </Text>
+                <ul
+                  class={`flex flex-col mt-4 gap-y-3 ${tier.descClass}`}
+                  role="list"
+                >
+                  {tier.features.map((feature) => (
+                    <li class="flex items-start gap-2">
+                      <Check size="sm" />
+                      <span class="text-sm leading-normal">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </Wrapper>
+</section>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const monthlyBtn = document.getElementById("monthly-pricing-button");
+    const annualBtn = document.getElementById("annual-pricing-button");
+    const indicator = document.getElementById("pricing-indicator");
+    if (!monthlyBtn || !annualBtn || !indicator) return;
+    const togglePricing = (isMonthly) => {
+      const activeClass = "text-white";
+      const inactiveClasses = ["text-base-500", "hover:text-accent-500"];
+      // Update buttons
+      [monthlyBtn, annualBtn].forEach((btn, idx) => {
+        const active = idx === 0 ? isMonthly : !isMonthly;
+        btn.setAttribute("aria-pressed", active.toString());
+        btn.classList.toggle(activeClass, active);
+        inactiveClasses.forEach((c) => btn.classList.toggle(c, !active));
+      });
+      // Update indicator
+      indicator.classList.toggle("translate-x-0", isMonthly);
+      indicator.classList.toggle("translate-x-full", !isMonthly);
+      // Update amounts
+      document.querySelectorAll('[id^="price-amount-"]').forEach((el) => {
+        if (el instanceof HTMLElement)
+          el.textContent = el.dataset[isMonthly ? "monthly" : "annual"] || "";
+      });
+      // Update labels
+      document
+        .querySelectorAll('[id^="billing-monthly-"]')
+        .forEach((el) => el.classList.toggle("hidden", !isMonthly));
+      document
+        .querySelectorAll('[id^="billing-annual-"]')
+        .forEach((el) => el.classList.toggle("hidden", isMonthly));
+    };
+    monthlyBtn.addEventListener("click", () => togglePricing(true));
+    annualBtn.addEventListener("click", () => togglePricing(false));
+  });
+</script>

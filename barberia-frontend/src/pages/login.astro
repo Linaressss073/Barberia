@@ -1,5 +1,4 @@
 ---
-// Fundations
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Text from "@/components/fundations/elements/Text.astro";
 import Button from "@/components/fundations/elements/Button.astro";
@@ -10,25 +9,34 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
   <section>
     <Wrapper variant="standard" class="py-20">
       <div class="max-w-sm mx-auto">
-      
         <Text
           tag="h1"
           variant="displaySM"
           class="tracking-tight font-semibold text-base-900"
         >
-          Sign in to your account
+          Iniciar sesión
         </Text>
         <Text
           tag="p"
           variant="textBase"
           class="mt-4 text-base-500 font-medium text-balance"
         >
-          Welcome back! Please enter your details to sign in.
+          Bienvenido de vuelta. Ingresa tus datos para continuar.
         </Text>
-        <form action="#" method="POST" class="mx-auto mt-12 max-w-sm">
+
+        <div
+          id="form-error"
+          class="hidden mt-6 p-3 rounded-lg bg-red-50 border border-red-200"
+        >
+          <p class="text-sm text-red-600" id="form-error-text"></p>
+        </div>
+
+        <form id="login-form" class="mx-auto mt-8 max-w-sm" novalidate>
           <div class="flex flex-col gap-y-6">
             <div>
-              <label class="text-sm text-base-500 font-medium"> Email </label>
+              <label for="email" class="text-sm text-base-500 font-medium">
+                Correo electrónico
+              </label>
               <div class="mt-2.5">
                 <input
                   type="email"
@@ -37,17 +45,13 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
                   autocomplete="email"
                   required
                   aria-required="true"
-                  aria-describedby="email-error"
                   class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
                 />
-                <span id="email-error" class="text-red-600 text-sm hidden">
-                  Please enter a valid email address.
-                </span>
               </div>
             </div>
             <div>
-              <label class="text-sm text-base-500 font-medium">
-                Password
+              <label for="password" class="text-sm text-base-500 font-medium">
+                Contraseña
               </label>
               <div class="mt-2.5">
                 <input
@@ -57,23 +61,24 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
                   autocomplete="current-password"
                   required
                   aria-required="true"
-                  aria-describedby="password-error"
                   class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
                 />
-                <span id="password-error" class="text-red-600 text-sm hidden">
-                  Please enter your password.
-                </span>
               </div>
             </div>
           </div>
-          <Button variant="default" size="base" class="mt-8 w-full">
-            Sign in
+          <Button
+            id="submit-btn"
+            variant="default"
+            size="base"
+            class="mt-8 w-full"
+          >
+            Iniciar sesión
           </Button>
           <div class="flex items-center mt-4">
             <Text tag="p" variant="textSM" class="text-base-500">
-              Don't have an account?
+              ¿No tienes cuenta?
               <a class="text-accent-700 hover:text-base-500" href="/signup">
-                Sign up
+                Crear cuenta
               </a>
             </Text>
           </div>
@@ -82,3 +87,84 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     </Wrapper>
   </section>
 </BaseLayout>
+
+<script>
+  import { isAuthenticated, saveSession } from "@/lib/auth";
+  import { getApiV1Url } from "@/lib/config";
+
+  if (isAuthenticated()) {
+    window.location.href = "/dashboard";
+  }
+
+  const form = document.getElementById("login-form") as HTMLFormElement | null;
+  const errorBox = document.getElementById("form-error") as HTMLElement | null;
+  const errorText = document.getElementById(
+    "form-error-text"
+  ) as HTMLElement | null;
+  const submitBtn = document.getElementById(
+    "submit-btn"
+  ) as HTMLButtonElement | null;
+
+  function showError(msg: string) {
+    if (errorText) errorText.textContent = msg;
+    errorBox?.classList.remove("hidden");
+  }
+
+  function hideError() {
+    errorBox?.classList.add("hidden");
+  }
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const fd = new FormData(form);
+    const email = (fd.get("email") as string).trim();
+    const password = fd.get("password") as string;
+
+    if (!email || !password) {
+      showError("Por favor completa todos los campos.");
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Iniciando sesión…";
+    }
+
+    try {
+      const res = await fetch(`${getApiV1Url()}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(err.message ?? "Credenciales incorrectas");
+      }
+
+      const body = (await res.json()) as {
+        data: {
+          user: { id: string; email: string; fullName: string; roles: string[] };
+          tokens: { accessToken: string; refreshToken: string };
+        };
+      };
+
+      saveSession(
+        body.data.user,
+        body.data.tokens.accessToken,
+        body.data.tokens.refreshToken
+      );
+      window.location.href = "/dashboard";
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Error al iniciar sesión");
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Iniciar sesión";
+      }
+    }
+  });
+</script>

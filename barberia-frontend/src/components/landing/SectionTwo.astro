@@ -1,32 +1,29 @@
 ---
-// Assets
 import { Image } from "astro:assets";
 import DashboardLight from "@/images/dashboardLight.svg";
-// Fundations
 import Text from "@/components/fundations/elements/Text.astro";
 import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
-// Icons
 import Check from "@/components/fundations/icons/Check.astro";
 
 const sections = [
   {
-    title: "Intuitive User Interface",
+    title: "Interface Sencilla",
     description:
-      "Our sleek and intuitive design ensures a smooth user experience, making CRM management effortless and enjoyable.",
-    features: ["Customizable Dashboards", "Drag-and-Drop Functionality"],
+      "Panel diseñado para usarse desde el día uno, sin necesidad de capacitación técnica.",
+    features: ["Vista de agenda diaria y semanal", "Acceso completo desde celular"],
   },
   {
-    title: "Powerful Analytics",
+    title: "Analítica en Tiempo Real",
     description:
-      "Gain deep insights with advanced analytics tools that help you understand customer behavior and trends.",
-    features: ["Real-Time Reporting", "Predictive Insights"],
+      "Entiende el rendimiento de tu negocio con reportes actualizados al instante.",
+    features: ["Reportes de ventas por período", "Comisiones desglosadas por barbero"],
   },
   {
-    title: "Seamless Integrations",
+    title: "Automatizaciones",
     description:
-      "Easily connect with your favorite tools and platforms for a unified and efficient workflow.",
-    features: ["API Connectivity", "Third-Party Apps Support"],
+      "Reduce el trabajo administrativo y deja que el sistema trabaje por ti.",
+    features: ["Recordatorios de citas automáticos", "Alertas de inventario bajo"],
   },
 ];
 ---
@@ -40,39 +37,38 @@ const sections = [
           variant="textSM"
           class="leading-normal font-bold uppercase text-accent-700"
         >
-          more benefits
+          Más beneficios
         </Text>
         <Text
           tag="h2"
           variant="displayMD"
           class="tracking-tight mt-4 font-semibold text-base-900"
         >
-Customer relationships for modern businesses
+          Diseñado para el día a día de la barbería
         </Text>
         <Text tag="p" variant="textBase" class="mt-4 text-base-500 font-medium">
-          The ultimate CRM solution for managing customer interactions and
-          driving business growth.
+          Simplifica la operación y enfócate en lo que mejor sabes hacer.
         </Text>
         <div class="flex flex-wrap items-center gap-2 mx-auto mt-12">
+          <Button
+            variant="default"
+            size="sm"
+            isLink
+            href="/signup">Crear Cuenta</Button
+          >
           <Button
             variant="muted"
             size="sm"
             isLink
-            href="https://github.com/michael-andreuzza/astrosaas">GitHub</Button
+            href="#features"
           >
-          <Button
-            variant="accent"
-            size="sm"
-            isLink
-            href="https://lexingtonthemes.com"
-          >
-            More themes</Button
+            Ver Funciones</Button
           >
         </div>
       </div>
       <div class="lg:col-span-2">
         <Image
-          alt="Dashboard"
+          alt="Panel de gestión de barbería"
           width={900}
           height={700}
           src={DashboardLight}

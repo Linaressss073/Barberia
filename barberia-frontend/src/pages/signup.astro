@@ -1,5 +1,4 @@
 ---
-// Fundations
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Text from "@/components/fundations/elements/Text.astro";
 import Button from "@/components/fundations/elements/Button.astro";
@@ -15,39 +14,47 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           variant="displaySM"
           class="tracking-tight font-semibold text-base-900"
         >
-          Join our community
+          Crear cuenta
         </Text>
         <Text
           tag="p"
           variant="textBase"
           class="mt-4 text-base-500 font-medium text-balance"
         >
-          Sign up to join our community and start building your brand.
+          Únete y comienza a reservar citas en tu barbería favorita.
         </Text>
-        <form action="#" method="POST" class="mx-auto mt-12">
+
+        <div
+          id="form-error"
+          class="hidden mt-6 p-3 rounded-lg bg-red-50 border border-red-200"
+        >
+          <p class="text-sm text-red-600" id="form-error-text"></p>
+        </div>
+
+        <form id="signup-form" class="mx-auto mt-8" novalidate>
           <div class="flex flex-col gap-y-6">
             <div>
-              <label class="text-sm text-base-500 font-medium">
-                First name
+              <label for="full-name" class="text-sm text-base-500 font-medium">
+                Nombre completo
               </label>
               <div class="mt-2.5">
                 <input
                   type="text"
-                  name="first-name"
-                  id="first-name"
-                  autocomplete="given-name"
+                  name="fullName"
+                  id="full-name"
+                  autocomplete="name"
                   required
                   aria-required="true"
-                  aria-describedby="first-name-error"
+                  minlength="2"
+                  maxlength="120"
                   class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
                 />
-                <span id="first-name-error" class="text-red-600 text-sm hidden">
-                  Please enter your first name.
-                </span>
               </div>
             </div>
             <div>
-              <label class="text-sm text-base-500 font-medium"> Email </label>
+              <label for="email" class="text-sm text-base-500 font-medium">
+                Correo electrónico
+              </label>
               <div class="mt-2.5">
                 <input
                   type="email"
@@ -56,41 +63,62 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
                   autocomplete="email"
                   required
                   aria-required="true"
-                  aria-describedby="email-error"
                   class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
                 />
-                <span id="email-error" class="text-red-600 text-sm hidden">
-                  Please enter a valid email address.
-                </span>
+              </div>
+            </div>
+            <div>
+              <label for="password" class="text-sm text-base-500 font-medium">
+                Contraseña
+              </label>
+              <div class="mt-2.5">
+                <input
+                  type="password"
+                  name="password"
+                  id="password"
+                  autocomplete="new-password"
+                  required
+                  aria-required="true"
+                  minlength="8"
+                  maxlength="128"
+                  class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
+                />
+                <p class="mt-1 text-xs text-base-400">Mínimo 8 caracteres</p>
               </div>
             </div>
           </div>
-          <div class="flex items-center mt-4 gap-3">
+          <div class="flex items-center mt-6 gap-3">
             <input
               id="agreement"
               name="agreement"
               type="checkbox"
+              required
               class="size-4 rounded border-base-300 text-accent-600 focus:ring-accent-600 shadow"
             />
-            <label class="undefined block text-sm text-base-500">
-              You agree to our
-              <a class="text-accent-700 hover:text-base-500" href="#_">
-                Terms of service
+            <label class="block text-sm text-base-500" for="agreement">
+              Acepto los
+              <a class="text-accent-700 hover:text-base-500" href="/terms">
+                Términos de uso
               </a>
-              and
-              <a class="t text-accent-700 hover:text-base-500" href="#_">
-                Privacy Policy
+              y la
+              <a class="text-accent-700 hover:text-base-500" href="/terms">
+                Política de privacidad
               </a>
             </label>
           </div>
-          <Button variant="default" size="base" class="mt-8 w-full">
-            Sign up
+          <Button
+            id="submit-btn"
+            variant="default"
+            size="base"
+            class="mt-8 w-full"
+          >
+            Crear cuenta
           </Button>
           <div class="flex items-center mt-4">
             <Text tag="p" variant="textSM" class="text-base-500">
-              Don't have an account? Already have an account?
+              ¿Ya tienes cuenta?
               <a class="text-accent-700 hover:text-base-500" href="/login">
-                Sign in
+                Iniciar sesión
               </a>
             </Text>
           </div>
@@ -99,3 +127,113 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     </Wrapper>
   </section>
 </BaseLayout>
+
+<script>
+  import { isAuthenticated, saveSession } from "@/lib/auth";
+  import { getApiV1Url } from "@/lib/config";
+
+  if (isAuthenticated()) {
+    window.location.href = "/dashboard";
+  }
+
+  const form = document.getElementById(
+    "signup-form"
+  ) as HTMLFormElement | null;
+  const errorBox = document.getElementById("form-error") as HTMLElement | null;
+  const errorText = document.getElementById(
+    "form-error-text"
+  ) as HTMLElement | null;
+  const submitBtn = document.getElementById(
+    "submit-btn"
+  ) as HTMLButtonElement | null;
+  const agreement = document.getElementById(
+    "agreement"
+  ) as HTMLInputElement | null;
+
+  function showError(msg: string) {
+    if (errorText) errorText.textContent = msg;
+    errorBox?.classList.remove("hidden");
+  }
+
+  function hideError() {
+    errorBox?.classList.add("hidden");
+  }
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideError();
+
+    if (!agreement?.checked) {
+      showError("Debes aceptar los términos para continuar.");
+      return;
+    }
+
+    const fd = new FormData(form);
+    const fullName = (fd.get("fullName") as string).trim();
+    const email = (fd.get("email") as string).trim();
+    const password = fd.get("password") as string;
+
+    if (!fullName || !email || !password) {
+      showError("Por favor completa todos los campos.");
+      return;
+    }
+    if (password.length < 8) {
+      showError("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creando cuenta…";
+    }
+
+    const apiBase = getApiV1Url();
+
+    try {
+      const regRes = await fetch(`${apiBase}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, password }),
+      });
+
+      if (!regRes.ok) {
+        const err = (await regRes.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(err.message ?? "Error al crear la cuenta");
+      }
+
+      // Auto-login after registration
+      const loginRes = await fetch(`${apiBase}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!loginRes.ok) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const body = (await loginRes.json()) as {
+        data: {
+          user: { id: string; email: string; fullName: string; roles: string[] };
+          tokens: { accessToken: string; refreshToken: string };
+        };
+      };
+
+      saveSession(
+        body.data.user,
+        body.data.tokens.accessToken,
+        body.data.tokens.refreshToken
+      );
+      window.location.href = "/dashboard";
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Error al crear la cuenta");
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Crear cuenta";
+      }
+    }
+  });
+</script>

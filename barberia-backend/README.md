@@ -55,6 +55,16 @@ npm run start:dev
 Swagger: http://localhost:3000/api/v1/docs
 Health: http://localhost:3000/api/v1/health
 
+### Postman
+
+Importar [`postman/Barberia-API.postman_collection.json`](postman/Barberia-API.postman_collection.json). Variable `baseUrl` = **solo el origen** (ej. `http://localhost:3000`); cada petición añade `/api/v1/...` automáticamente. Ejecuta **Auth → POST login** para guardar `accessToken` y `refreshToken` (scripts de test en Login y Refresh).
+
+Para regenerar el JSON después de cambios en endpoints:
+
+```bash
+node postman/generate-collection.mjs
+```
+
 ---
 
 ## 4. Migraciones (TypeORM)

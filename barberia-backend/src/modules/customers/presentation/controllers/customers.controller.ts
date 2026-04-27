@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseIntPipe,
   ParseUUIDPipe,
@@ -13,11 +14,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role, Roles } from '@core/decorators/roles.decorator';
+import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '@modules/auth/presentation/guards/roles.guard';
 import { PaginationQueryDto } from '@shared/pagination/pagination.dto';
+import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { Customer } from '../../domain/entities/customer.entity';
 import { CreateCustomerDto } from '../../application/dto/create-customer.dto';
 import { UpdateCustomerDto } from '../../application/dto/update-customer.dto';
@@ -33,8 +36,6 @@ import {
   CUSTOMER_REPOSITORY,
   CustomerRepository,
 } from '../../domain/repositories/customer.repository';
-import { Inject } from '@nestjs/common';
-import { UniqueEntityId } from '@core/domain/unique-entity-id';
 
 @ApiTags('Customers')
 @ApiBearerAuth()
@@ -50,6 +51,14 @@ export class CustomersController {
     private readonly redeemUC: RedeemLoyaltyPointsUseCase,
     @Inject(CUSTOMER_REPOSITORY) private readonly repo: CustomerRepository,
   ) {}
+
+  @Get('me')
+  @Roles(Role.Admin, Role.Receptionist, Role.Barber, Role.Customer)
+  @ApiOperation({ summary: 'Perfil de cliente del usuario autenticado' })
+  async getMe(@CurrentUser() user: AuthenticatedUser) {
+    const customer = await this.repo.findByUserId(new UniqueEntityId(user.sub));
+    return customer ? this.toJson(customer) : null;
+  }
 
   @Get()
   @Roles(Role.Admin, Role.Receptionist, Role.Barber)

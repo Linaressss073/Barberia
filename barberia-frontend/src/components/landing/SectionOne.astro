@@ -1,50 +1,50 @@
 ---
-// Fundations
 import Text from "@/components/fundations/elements/Text.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
-// Icons
 import Edit from "@/components/fundations/icons/Edit.astro";
 import Complete from "@/components/fundations/icons/Complete.astro";
 import Eye from "@/components/fundations/icons/Eye.astro";
 import Color from "@/components/fundations/icons/Color.astro";
 
 const features = [
-  "Contact Management",
-  "Lead Tracking",
-  "Customer Segmentation",
-  "Email Campaigns",
-  "Sales Pipeline",
-  "Task Automation",
-  "Reporting Dashboards",
-  "Mobile Access",
-  "Data Import/Export",
-  "User Permissions",
-  "Integration APIs",
-  "Customer Support Ticketing",
+  "Citas Online",
+  "Gestión de Barberos",
+  "Base de Clientes",
+  "Control de Inventario",
+  "Ventas y Caja",
+  "Programa de Lealtad",
+  "Reportes y Estadísticas",
+  "Notificaciones",
+  "Membresías",
+  "Horarios y Bloques",
+  "Comisiones",
+  "Multi-sucursal",
 ];
 
 const featureItems = [
   {
     icon: Edit,
-    title: "Contact Management",
+    title: "Agenda Inteligente",
     description:
-      "Easily organize and manage all your customer contacts in one place.",
+      "Reserva de citas online con barbero favorito, consulta de disponibilidad en tiempo real y recordatorios automáticos.",
   },
   {
     icon: Complete,
-    title: "Lead Tracking",
+    title: "Clientes y Lealtad",
     description:
-      "Track leads from initial contact to conversion with detailed insights.",
+      "Historial completo de cada cliente, programa de puntos por visita y control de preferencias personales.",
   },
   {
     icon: Eye,
-    title: "Sales Forecasting",
-    description: "Predict future sales trends and plan strategies accordingly.",
+    title: "Ventas e Inventario",
+    description:
+      "Registro de pagos, control de productos y alertas de stock para mantener tu caja y almacén siempre al día.",
   },
   {
     icon: Color,
-    title: "Automated Workflows",
-    description: "Streamline processes with customizable automated workflows.",
+    title: "Reportes del Negocio",
+    description:
+      "Estadísticas de rendimiento, comisiones por barbero y análisis de clientes para tomar mejores decisiones.",
   },
 ];
 ---
@@ -57,18 +57,17 @@ const featureItems = [
         variant="textSM"
         class="leading-normal font-bold uppercase text-accent-700"
       >
-        benefits
+        Funciones
       </Text>
       <Text
         tag="h2"
         variant="displayMD"
         class="tracking-tight mt-4 font-semibold text-base-900"
       >
-        Empowering businesses with intelligent CRM solutions
+        Todo lo que tu barbería necesita
       </Text>
       <Text tag="p" variant="textBase" class="mt-4 text-base-500 font-medium">
-        The most efficient way to manage customer relationships and boost sales
-        performance.
+        La herramienta más completa para gestionar tu negocio sin complicaciones.
       </Text>
     </div>
     <div
@@ -84,7 +83,7 @@ const featureItems = [
         >
         </div>
       </div>
-      <div class="relative flex items-center gap-2 whitespace-nowrap t">
+      <div class="relative flex items-center gap-2 whitespace-nowrap">
         {
           features.map((feature) => (
             <span class="inline-flex items-center font-medium relative text-base-700 bg-base-50 px-4 py-1.5 text-sm rounded-lg">
@@ -100,7 +99,7 @@ const featureItems = [
       {
         featureItems.map((item) => (
           <div>
-            <div class="flex flex-col gap-3 ">
+            <div class="flex flex-col gap-3">
               <item.icon class="size-5 mx-auto text-accent-700" />
               <dt>
                 <Text

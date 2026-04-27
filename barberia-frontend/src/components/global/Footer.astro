@@ -1,51 +1,41 @@
 ---
-// Assets
 import Logo from "@/components/assets/Logo.astro";
-// Fundations
 import Text from "@/components/fundations/elements/Text.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
+
 const sections = [
   {
-    title: "All pages",
+    title: "Plataforma",
     links: [
-      { name: "Home", href: "/" },
-      { name: "Terms", href: "/terms" },
-      { name: "Sign up", href: "/signup" },
-      { name: "Sign In", href: "/signup" },
+      { name: "Inicio", href: "/" },
+      { name: "Funciones", href: "/#features" },
+      { name: "Precios", href: "/#pricing" },
+      { name: "FAQ", href: "/#faq" },
     ],
   },
   {
-    title: "Resources",
+    title: "Cuenta",
     links: [
-      {
-        name: "GitHub repo",
-        href: "https://github.com/michael-andreuzza/astrosaas",
-      },
+      { name: "Crear cuenta", href: "/signup" },
+      { name: "Iniciar sesión", href: "/login" },
+      { name: "Panel", href: "/dashboard" },
     ],
   },
   {
-    title: "More themes",
+    title: "Legal",
     links: [
-      {
-        name: "Lexington Themes",
-        href: "https://lexingtonthemes.com/",
-      },
+      { name: "Términos de uso", href: "/terms" },
+      { name: "Privacidad", href: "/terms" },
     ],
   },
   {
-    title: "Socials",
+    title: "Soporte",
     links: [
-      {
-        name: "@lexingtonthemes",
-        href: "https://x.com/lexingtonthemes",
-      },
-      {
-        name: "@Mike_Andreuzza",
-        href: "https://x.com/Mike_Andreuzza",
-      },
+      { name: "soporte@barberia.app", href: "mailto:soporte@barberia.app" },
     ],
   },
 ];
+
 const currentYear = new Date().getFullYear();
 ---
 
@@ -53,7 +43,7 @@ const currentYear = new Date().getFullYear();
   <Wrapper variant="standard" class="py-12">
     <div class="grid grid-cols-2 lg:grid-cols-4 items-start gap-x-8 gap-y-24">
       <a href="/">
-        <Logo class="textBase font-medium" />
+        <Logo class="text-base-900" />
       </a>
       <div
         class="grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-4 lg:col-span-3"
@@ -64,7 +54,7 @@ const currentYear = new Date().getFullYear();
               <Text
                 tag="h3"
                 variant="textSM"
-                class=" text-base-900 font-medium uppercase"
+                class="text-base-900 font-medium uppercase"
               >
                 {title}
               </Text>
@@ -86,15 +76,8 @@ const currentYear = new Date().getFullYear();
       </div>
     </div>
     <div class="border-t pt-6 border-base-200 mt-8">
-      <p class="text-xs text-base-500 lg:col-span-2">
-        © {currentYear} Lexington Themes. All rights reserved. The biggest Astro
-        collection with premium themes. Clean code. Modern design. Easy to customize.
-        Production-ready. Trusted by 8,000+ freelancers, startups, and agencies —
-        Awarded by Astro. A side project by <a
-          class="text-sm text-black hover:text-accent-700 underline"
-          href="https://michaelandreuzza.com/">Michael Andreuzza</a
-        > This website was built with Astro &amp; Tailwind. Crafted in Åland Islands,
-        Finland.
+      <p class="text-xs text-base-500">
+        © {currentYear} Barbería. Todos los derechos reservados.
       </p>
     </div>
   </Wrapper>

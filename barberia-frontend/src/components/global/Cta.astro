@@ -1,26 +1,28 @@
 ---
-// Assets
-import { Image } from "astro:assets";
-// Fundations
 import Text from "@/components/fundations/elements/Text.astro";
 import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
-const ads = [
+
+const cards = [
   {
-    title: "Lexington Themes",
-    event: "lexingtonAdd",
-    href: "https://lexingtonthemes.com/",
-    imgSrc: "https://www.colorsandfonts.com/images/lexington.png",
+    eyebrow: "Para clientes",
+    title: "¿Eres Cliente?",
     description:
-      "The biggest Astro collection with 43 premium themes. Clean code. Modern design. Easy to customize. Production-ready. Trusted by 8,000+ freelancers, startups, and agencies — Awarded by Astro.",
+      "Crea tu cuenta gratis y reserva citas online en minutos. Elige tu barbero favorito, revisa disponibilidad y recibe recordatorios automáticos.",
+    cta: "Crear Cuenta Gratis",
+    href: "/signup",
+    variant: "default",
+    dark: false,
   },
   {
-    title: "Oxbow UI",
-    event: "oxbowAdd",
-    href: "https://oxbowui.com/",
-    imgSrc: "https://www.colorsandfonts.com/images/oxbow.png",
+    eyebrow: "Para el negocio",
+    title: "¿Eres Barbero o Dueño?",
     description:
-      "Oxbow UI is Open Source.427 Tailwind CSS & Alpine JS blocks — MIT-licensed and production-ready. Copy paste, fork it, remix it, ship it,enjoy it, share it.",
+      "Administra tu negocio desde un panel completo: agenda, clientes, ventas e inventario. Todo organizado en un solo lugar.",
+    cta: "Iniciar Sesión",
+    href: "/login",
+    variant: "muted",
+    dark: true,
   },
 ];
 ---
@@ -29,42 +31,54 @@ const ads = [
   <Wrapper variant="standard" class="py-20">
     <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
       {
-        ads.map((ad) => (
-          <div class="group relative  ring-4 ring-base-50 border border-base-200 cursor-pointer   rounded-2xl overflow-hidden">
-            <a href={ad.href} class="absolute inset-0" />
-            <div class="flex flex-col items-start justify-between h-full ">
-              <Image
-                alt={ad.description}
-                width={400}
-                height={240}
-                class="block w-full h-full  cursor-pointer overflow-hidden  object-cover  aspect-[16/8] object-top"
-                src={ad.imgSrc}
-                style={{ color: "transparent" }}
-              />
-              <div class="p-8 bg-white border-b border-base-200 order-first h-full flex flex-col justify-between gap-8">
-                <div>
-                  <Text
-                    tag="h3"
-                    variant="textLG"
-                    class="font-medium text-base-900"
-                  >
-                    {ad.title}
-                  </Text>
-                  <Text tag="p" variant="textBase" class="text-base-500 mt-1">
-                    {ad.description}
-                  </Text>
-                </div>
-                <Button
-                  isLink
-                  size="sm"
-                  variant="default"
-                  href={ad.href}
-                  class="w-fit"
-                >
-                  Visit {ad.title}
-                </Button>
-              </div>
+        cards.map((card) => (
+          <div
+            class:list={[
+              "flex flex-col justify-between gap-8 p-8 rounded-2xl border border-base-200",
+              card.dark ? "bg-accent-950" : "bg-base-50 ring-4 ring-base-50",
+            ]}
+          >
+            <div>
+              <Text
+                tag="span"
+                variant="textSM"
+                class:list={[
+                  "leading-normal font-bold uppercase",
+                  card.dark ? "text-accent-300" : "text-accent-700",
+                ]}
+              >
+                {card.eyebrow}
+              </Text>
+              <Text
+                tag="h3"
+                variant="displaySM"
+                class:list={[
+                  "mt-3 font-semibold tracking-tight",
+                  card.dark ? "text-white" : "text-base-900",
+                ]}
+              >
+                {card.title}
+              </Text>
+              <Text
+                tag="p"
+                variant="textBase"
+                class:list={[
+                  "mt-3 font-medium",
+                  card.dark ? "text-base-300" : "text-base-500",
+                ]}
+              >
+                {card.description}
+              </Text>
             </div>
+            <Button
+              isLink
+              size="sm"
+              variant={card.variant}
+              href={card.href}
+              class="w-fit"
+            >
+              {card.cta}
+            </Button>
           </div>
         ))
       }

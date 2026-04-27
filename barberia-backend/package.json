@@ -27,7 +27,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:show": "npm run typeorm -- migration:show",
-    "seed:run": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/run-seeds.ts"
+    "seed:run": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/run-seeds.ts",
+    "postman:collection": "node postman/generate-collection.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

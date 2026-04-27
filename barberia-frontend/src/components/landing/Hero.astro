@@ -1,8 +1,6 @@
 ---
-// Assets
 import { Image } from "astro:assets";
 import DashboardLight from "@/images/dashboardLight.svg";
-// Fundations
 import Text from "@/components/fundations/elements/Text.astro";
 import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
@@ -16,43 +14,42 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         variant="textSM"
         class="leading-normal font-bold uppercase text-accent-700"
       >
-        welcome
+        Sistema de Gestión
       </Text>
       <Text
         tag="h1"
         variant="displayMD"
         class="tracking-tight mt-4 font-semibold text-base-900"
       >
-        A starter template built with Astro and Tailwind CSS for your next
-        project
+        Tu Barbería, Siempre Organizada
       </Text>
       <Text tag="p" variant="textBase" class="mt-4 text-base-500 font-medium text-balance">
-        Feature sections, a pricing table, testimonial, CTA, and full forms.
+        Agenda citas, gestiona clientes, controla inventario y monitorea ventas
+        desde un solo lugar. Sin complicaciones.
       </Text>
       <div class="flex flex-wrap items-center gap-2 justify-center mt-12">
+        <Button
+          variant="default"
+          size="sm"
+          isLink
+          href="/signup">Crear Cuenta Gratis</Button
+        >
         <Button
           variant="muted"
           size="sm"
           isLink
-          href="https://github.com/michael-andreuzza/astrosaas">GitHub</Button
+          href="#features"
         >
-        <Button
-          variant="accent"
-          size="sm"
-          isLink
-          href="https://lexingtonthemes.com"
-        >
-          More themes</Button
+          Ver Funciones</Button
         >
       </div>
     </div>
 
     <div class="relative w-full mx-auto max-w-7xl items-center py-12 pb-12">
       <Image
-        alt="Dashboard"
+        alt="Panel de gestión de barbería"
         width={900}
         height={700}
-        alt="#_"
         src={DashboardLight}
         class="relative w-full ring-4 ring-base-50 border border-base-200 lg:rounded-2xl object-cover rounded"
       />

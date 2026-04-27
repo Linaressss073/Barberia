@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   app.use(compression());
   app.enableCors({
-    origin: [cfg.frontendUrl],
+    origin: cfg.frontendUrls,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

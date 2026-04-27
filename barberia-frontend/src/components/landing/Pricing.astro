@@ -1,27 +1,26 @@
 ---
-// Fundations
 import Text from "@/components/fundations/elements/Text.astro";
 import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
-// Icons
 import Check from "@/components/fundations/icons/Check.astro";
+
 const pricingTiers = [
   {
-    name: "Core",
-    subtitle: "For small teams and founders",
+    name: "Básico",
+    subtitle: "Para barberías pequeñas",
     description:
-      "Everything you need to centralize leads, keep follow-ups on time, and stay organized.",
+      "Todo lo esencial para digitalizar tu barbería y empezar a recibir citas online.",
     monthlyPrice: "$29.00",
     annualPrice: "$19.00",
     features: [
-      "Up to 1,500 contacts across 2 pipelines",
-      "Kanban board with stage automations",
-      "Gmail/Outlook and calendar sync",
-      "Tasks, reminders, and SLA timers",
-      "Standard reports and exports",
-      "Email and community support",
+      "Hasta 3 barberos activos",
+      "Citas y agenda online",
+      "Base de clientes ilimitada",
+      "Registro de ventas y pagos",
+      "Panel de administración",
+      "Soporte por email",
     ],
-    cta: "Start Core",
+    cta: "Comenzar con Básico",
     buttonVariant: "default",
     isPopular: false,
     bgClass: "bg-base-50 ring-4 ring-base-50",
@@ -30,21 +29,21 @@ const pricingTiers = [
     descClass: "text-base-500",
   },
   {
-    name: "Momentum",
-    subtitle: "For scaling revenue teams",
+    name: "Profesional",
+    subtitle: "Para negocios que crecen",
     description:
-      "Automation, shared inbox, and forecasting to keep every deal moving across the team.",
-    monthlyPrice: "$49.00",
-    annualPrice: "$39.00",
+      "Automatización, inventario y notificaciones para equipos de barbería en expansión.",
+    monthlyPrice: "$59.00",
+    annualPrice: "$45.00",
     features: [
-      "Up to 15,000 contacts and 5 pipelines",
-      "Automation workflows and sequences",
-      "Shared inbox with collision detection",
-      "Custom fields, views, and dashboards",
-      "Forecasting and revenue analytics",
-      "API, webhooks, and priority support",
+      "Hasta 10 barberos activos",
+      "Todo lo del plan Básico",
+      "Control de inventario y stock",
+      "Reportes avanzados y comisiones",
+      "Notificaciones email y WhatsApp",
+      "Programa de lealtad para clientes",
     ],
-    cta: "Upgrade to Momentum",
+    cta: "Ir a Profesional",
     buttonVariant: "muted",
     isPopular: true,
     bgClass: "bg-accent-950 ring-4 ring-accent-50",
@@ -53,21 +52,21 @@ const pricingTiers = [
     descClass: "text-base-200",
   },
   {
-    name: "Growth",
-    subtitle: "For established sales orgs",
+    name: "Enterprise",
+    subtitle: "Para cadenas y equipos grandes",
     description:
-      "Enterprise-ready controls with dedicated guidance for complex, multi-team pipelines.",
+      "Sin límites, múltiples sucursales y soporte dedicado para operaciones complejas.",
     monthlyPrice: "$99.00",
     annualPrice: "$79.00",
     features: [
-      "Unlimited contacts, pipelines, and seats",
-      "Advanced permissions and SSO",
-      "Two-way data syncs and enrichment",
-      "Playbooks with approval workflows",
-      "Dedicated success manager",
-      "Exports, audit logs, and SLA-backed support",
+      "Barberos y sedes ilimitadas",
+      "Todo lo del plan Profesional",
+      "Múltiples sucursales",
+      "API y webhooks",
+      "Soporte prioritario 24/7",
+      "Onboarding personalizado",
     ],
-    cta: "Talk to sales",
+    cta: "Hablar con ventas",
     buttonVariant: "default",
     isPopular: false,
     bgClass: "bg-base-50 ring-4 ring-base-50",
@@ -86,22 +85,21 @@ const pricingTiers = [
         variant="textSM"
         class="leading-normal font-bold uppercase text-accent-700"
       >
-        pricing
+        Precios
       </Text>
       <Text
         tag="h2"
         variant="displayMD"
         class="tracking-tight mt-4 font-semibold text-base-900"
       >
-        CRM pricing for every stage
+        Planes para cada etapa de tu negocio
       </Text>
       <Text
         tag="p"
         variant="textBase"
         class="mt-4 text-base-500 font-medium text-balance"
       >
-        From founder-led sales to multi-team RevOps, pick the plan that keeps
-        deals moving.
+        Empieza gratis 14 días y escala cuando necesites más funciones.
       </Text>
       <div
         aria-labelledby="pricing-toggle"
@@ -118,7 +116,7 @@ const pricingTiers = [
           type="button"
           aria-pressed="true"
         >
-          Monthly
+          Mensual
         </button>
         <button
           id="annual-pricing-button"
@@ -126,7 +124,7 @@ const pricingTiers = [
           type="button"
           aria-pressed="false"
         >
-          Annual
+          Anual
         </button>
       </div>
     </div>
@@ -164,7 +162,7 @@ const pricingTiers = [
                 <Text
                   tag="p"
                   variant="textSM"
-                  class={` mt-4 ${tier.descClass}`}
+                  class={`mt-4 ${tier.descClass}`}
                 >
                   {tier.description}
                 </Text>
@@ -172,16 +170,18 @@ const pricingTiers = [
                   variant={tier.buttonVariant}
                   size="base"
                   class="w-full mt-12"
+                  isLink
+                  href="/signup"
                 >
                   {tier.cta}
                 </Button>
               </div>
             </div>
-            <div class="p-8 flex flex-col  ">
+            <div class="p-8 flex flex-col">
               <Text
                 tag="p"
                 variant="displayMD"
-                class={`font-medium flex  items-baseline  ${tier.priceClass}`}
+                class={`font-medium flex items-baseline ${tier.priceClass}`}
               >
                 <span
                   id={`price-amount-${index}`}
@@ -191,11 +191,11 @@ const pricingTiers = [
                   {tier.monthlyPrice}
                 </span>
                 <span
-                  class={`text-sm font-normal  tracking-normal ${tier.isPopular ? "text-white/70" : "text-base-500"}`}
+                  class={`text-sm font-normal tracking-normal ${tier.isPopular ? "text-white/70" : "text-base-500"}`}
                 >
-                  <span id={`billing-monthly-${index}`}>/month</span>
+                  <span id={`billing-monthly-${index}`}>/mes</span>
                   <span id={`billing-annual-${index}`} class="hidden">
-                    /annually
+                    /año
                   </span>
                 </span>
               </Text>
@@ -205,7 +205,7 @@ const pricingTiers = [
                   variant="textSM"
                   class={`font-medium uppercase ${tier.descClass}`}
                 >
-                  {tier.name} plan includes:
+                  {tier.name} incluye:
                 </Text>
                 <ul
                   class={`flex flex-col mt-4 gap-y-3 ${tier.descClass}`}
@@ -232,25 +232,21 @@ const pricingTiers = [
     const annualBtn = document.getElementById("annual-pricing-button");
     const indicator = document.getElementById("pricing-indicator");
     if (!monthlyBtn || !annualBtn || !indicator) return;
-    const togglePricing = (isMonthly) => {
+    const togglePricing = (isMonthly: boolean) => {
       const activeClass = "text-white";
       const inactiveClasses = ["text-base-500", "hover:text-accent-500"];
-      // Update buttons
       [monthlyBtn, annualBtn].forEach((btn, idx) => {
         const active = idx === 0 ? isMonthly : !isMonthly;
         btn.setAttribute("aria-pressed", active.toString());
         btn.classList.toggle(activeClass, active);
         inactiveClasses.forEach((c) => btn.classList.toggle(c, !active));
       });
-      // Update indicator
       indicator.classList.toggle("translate-x-0", isMonthly);
       indicator.classList.toggle("translate-x-full", !isMonthly);
-      // Update amounts
       document.querySelectorAll('[id^="price-amount-"]').forEach((el) => {
         if (el instanceof HTMLElement)
           el.textContent = el.dataset[isMonthly ? "monthly" : "annual"] || "";
       });
-      // Update labels
       document
         .querySelectorAll('[id^="billing-monthly-"]')
         .forEach((el) => el.classList.toggle("hidden", !isMonthly));

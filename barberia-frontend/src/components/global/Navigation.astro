@@ -1,16 +1,14 @@
 ---
-// Assets
 import Logo from "@/components/assets/Logo.astro";
-// Fundations
 import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
-//Icons
 import Burger from "@/components/fundations/icons/Burger.astro";
 import Close from "@/components/fundations/icons/Close.astro";
+
 const navItems = [
-  { href: "#features", text: "Features" },
-  { href: "#pricing", text: "Pricing" },
-  { href: "#faq", text: "Faq" },
+  { href: "#features", text: "Funciones" },
+  { href: "#pricing", text: "Precios" },
+  { href: "#faq", text: "FAQ" },
 ];
 ---
 
@@ -21,7 +19,7 @@ const navItems = [
     >
       <div class="flex flex-row items-center justify-between lg:justify-start">
         <a href="/">
-          <Logo class="textBase font-medium" />
+          <Logo class="text-base-900" />
         </a>
         <button
           id="nav-toggle"
@@ -39,7 +37,7 @@ const navItems = [
       >
         <div class="flex flex-col md:flex-row items-center gap-4">
           {
-            navItems.map((item, index) => (
+            navItems.map((item) => (
               <a
                 class="text-sm font-medium text-base-600 hover:text-accent-700"
                 href={item.href}
@@ -55,7 +53,7 @@ const navItems = [
             size="sm"
             isLink
             href="/signup"
-            class="w-full md:w-fit">Sign up</Button
+            class="w-full md:w-fit">Crear cuenta</Button
           >
           <Button
             variant="default"
@@ -64,7 +62,7 @@ const navItems = [
             href="/login"
             class="w-full md:w-fit"
           >
-            Log in</Button
+            Iniciar sesión</Button
           >
         </div>
       </nav>
@@ -82,32 +80,21 @@ const navItems = [
     if (toggleButton && navMenu && openIcon && closeIcon) {
       toggleButton.addEventListener("click", () => {
         const isHidden = navMenu.classList.contains("hidden");
-
         if (isHidden) {
-          // Open menu
           navMenu.classList.remove("hidden");
           navMenu.classList.add("flex");
-
-          // Show Close icon, Hide Burger
           openIcon.classList.add("hidden");
           openIcon.classList.remove("inline-flex");
-
           closeIcon.classList.remove("hidden");
           closeIcon.classList.add("inline-flex");
-
           toggleButton.setAttribute("aria-expanded", "true");
         } else {
-          // Close menu
           navMenu.classList.add("hidden");
           navMenu.classList.remove("flex");
-
-          // Show Burger, Hide Close
           openIcon.classList.remove("hidden");
           openIcon.classList.add("inline-flex");
-
           closeIcon.classList.add("hidden");
           closeIcon.classList.remove("inline-flex");
-
           toggleButton.setAttribute("aria-expanded", "false");
         }
       });

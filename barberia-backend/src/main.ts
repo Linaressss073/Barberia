@@ -16,7 +16,11 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   app.use(compression());
   app.enableCors({
-    origin: cfg.frontendUrls,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      // and any browser origin — the API is protected by JWT, not by CORS
+      callback(null, origin ?? '*');
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

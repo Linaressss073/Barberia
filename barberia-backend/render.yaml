@@ -11,7 +11,7 @@ services:
     branch: main
     rootDir: barberia-backend
     buildCommand: npm install && npm run build
-    startCommand: node dist/main.js
+    startCommand: node --max-old-space-size=256 dist/main.js
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:

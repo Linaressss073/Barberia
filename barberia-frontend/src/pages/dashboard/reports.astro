@@ -1,0 +1,292 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Reportes" section="reports">
+
+  <div class="space-y-6">
+    <!-- Date range picker -->
+    <div class="bg-base-900 border border-base-800 rounded-xl p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+        <div class="flex gap-4 flex-wrap">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Desde</label>
+            <input id="date-from" type="date"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Hasta</label>
+            <input id="date-to" type="date"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+        </div>
+        <button id="btn-load-reports" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors shrink-0">Generar Reportes</button>
+      </div>
+      <!-- Presets -->
+      <div class="flex flex-wrap gap-2">
+        <button class="preset-btn px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 hover:text-base-100 hover:bg-base-700 border border-base-700 transition-colors" data-preset="today">Hoy</button>
+        <button class="preset-btn px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 hover:text-base-100 hover:bg-base-700 border border-base-700 transition-colors" data-preset="week">Esta semana</button>
+        <button class="preset-btn px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 hover:text-base-100 hover:bg-base-700 border border-base-700 transition-colors" data-preset="month">Este mes</button>
+        <button class="preset-btn px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 hover:text-base-100 hover:bg-base-700 border border-base-700 transition-colors" data-preset="last30">Últimos 30 días</button>
+      </div>
+    </div>
+
+    <!-- 1. Ventas Diarias -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-base-800 flex items-center justify-between">
+        <h3 class="text-base-100 font-semibold">Ventas Diarias</h3>
+        <div id="daily-loading" class="hidden text-xs text-base-500">Cargando…</div>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Fecha</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest"># Ventas</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Total</th>
+          </tr>
+        </thead>
+        <tbody id="daily-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="daily-empty" class="hidden p-8 text-center text-base-500 text-sm">No hay datos para este período.</div>
+    </div>
+
+    <!-- 2. Top Servicios -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-base-800 flex items-center justify-between">
+        <h3 class="text-base-100 font-semibold">Top Servicios</h3>
+        <div id="services-loading" class="hidden text-xs text-base-500">Cargando…</div>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Servicio</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Unidades</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Ingresos</th>
+          </tr>
+        </thead>
+        <tbody id="services-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="services-empty" class="hidden p-8 text-center text-base-500 text-sm">No hay datos para este período.</div>
+    </div>
+
+    <!-- 3. Ocupación Barberos -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-base-800 flex items-center justify-between">
+        <h3 class="text-base-100 font-semibold">Ocupación Barberos</h3>
+        <div id="occupancy-loading" class="hidden text-xs text-base-500">Cargando…</div>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Barbero</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden sm:table-cell">Min. reservados</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden sm:table-cell">Min. rango</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Ocupación</th>
+          </tr>
+        </thead>
+        <tbody id="occupancy-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="occupancy-empty" class="hidden p-8 text-center text-base-500 text-sm">No hay datos para este período.</div>
+    </div>
+
+    <!-- 4. Comisiones Barberos -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-base-800 flex items-center justify-between">
+        <h3 class="text-base-100 font-semibold">Comisiones Barberos</h3>
+        <div id="commissions-loading" class="hidden text-xs text-base-500">Cargando…</div>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Barbero</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden sm:table-cell">Comisión %</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Base</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Comisión</th>
+          </tr>
+        </thead>
+        <tbody id="commissions-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="commissions-empty" class="hidden p-8 text-center text-base-500 text-sm">No hay datos para este período.</div>
+    </div>
+
+    <!-- 5. Top Clientes -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-base-800 flex items-center justify-between">
+        <h3 class="text-base-100 font-semibold">Top Clientes</h3>
+        <div id="customers-loading" class="hidden text-xs text-base-500">Cargando…</div>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Cliente</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Visitas</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Total gastado</th>
+          </tr>
+        </thead>
+        <tbody id="customers-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="customers-empty" class="hidden p-8 text-center text-base-500 text-sm">No hay datos para este período.</div>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser();
+  const roles = user.roles.map(r => r.toUpperCase());
+  if (!roles.includes("ADMIN")) {
+    window.location.href = "/dashboard/";
+    throw new Error("redirect");
+  }
+
+  function fmtCents(c) {
+    return (c / 100).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  }
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+  }
+  function toInputDate(d) { return d.toISOString().split("T")[0]; }
+
+  // Set defaults to this month
+  const now = new Date();
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById("date-from").value = toInputDate(firstOfMonth);
+  document.getElementById("date-to").value = toInputDate(now);
+
+  // Preset buttons
+  document.querySelectorAll(".preset-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const today = new Date();
+      let from, to = toInputDate(today);
+      switch (btn.dataset.preset) {
+        case "today":
+          from = toInputDate(today); break;
+        case "week": {
+          const d = new Date(today);
+          d.setDate(d.getDate() - d.getDay());
+          from = toInputDate(d); break;
+        }
+        case "month":
+          from = toInputDate(new Date(today.getFullYear(), today.getMonth(), 1)); break;
+        case "last30": {
+          const d = new Date(today);
+          d.setDate(d.getDate() - 30);
+          from = toInputDate(d); break;
+        }
+      }
+      document.getElementById("date-from").value = from;
+      document.getElementById("date-to").value = to;
+      loadAllReports();
+    });
+  });
+
+  document.getElementById("btn-load-reports").addEventListener("click", loadAllReports);
+
+  function getRange() {
+    const from = document.getElementById("date-from").value;
+    const to = document.getElementById("date-to").value;
+    if (!from || !to) return null;
+    const fromISO = new Date(from + "T00:00:00").toISOString();
+    const toISO = new Date(to + "T23:59:59").toISOString();
+    return { from: fromISO, to: toISO };
+  }
+
+  function setLoading(id, show) {
+    document.getElementById(id).classList.toggle("hidden", !show);
+  }
+
+  function renderTable(bodyId, emptyId, rows) {
+    const body = document.getElementById(bodyId);
+    const empty = document.getElementById(emptyId);
+    body.innerHTML = "";
+    if (!rows || rows.length === 0) { empty.classList.remove("hidden"); return; }
+    empty.classList.add("hidden");
+    rows.forEach(cells => {
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-base-800/30 transition-colors";
+      tr.innerHTML = cells.map(c => `<td class="${c.cls ?? "px-4 py-3 text-sm text-base-100"}">${c.val}</td>`).join("");
+      body.appendChild(tr);
+    });
+  }
+
+  async function loadAllReports() {
+    const range = getRange();
+    if (!range) { window.toast("Selecciona un rango de fechas", "error"); return; }
+    const { from, to } = range;
+    const qs = `from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+
+    // 1. Daily sales
+    setLoading("daily-loading", true);
+    apiFetch(`/reports/sales/daily?${qs}`)
+      .then(data => {
+        setLoading("daily-loading", false);
+        const items = Array.isArray(data) ? data : (data.items ?? []);
+        renderTable("daily-body", "daily-empty", items.map(d => [
+          { val: fmtDate(d.date ?? d.day ?? d.period) },
+          { val: d.count ?? d.salesCount ?? "—", cls: "px-4 py-3 text-sm text-base-100" },
+          { val: fmtCents(d.totalCents ?? d.total ?? 0), cls: "px-4 py-3 text-sm text-accent-400 font-semibold" },
+        ]));
+      })
+      .catch(() => { setLoading("daily-loading", false); document.getElementById("daily-empty").classList.remove("hidden"); });
+
+    // 2. Top services
+    setLoading("services-loading", true);
+    apiFetch(`/reports/services/top?${qs}`)
+      .then(data => {
+        setLoading("services-loading", false);
+        const items = Array.isArray(data) ? data : (data.items ?? []);
+        renderTable("services-body", "services-empty", items.map(s => [
+          { val: s.name ?? s.serviceName ?? "—" },
+          { val: s.units ?? s.count ?? "—", cls: "px-4 py-3 text-sm text-base-100" },
+          { val: fmtCents(s.revenueCents ?? s.revenue ?? 0), cls: "px-4 py-3 text-sm text-accent-400 font-semibold" },
+        ]));
+      })
+      .catch(() => { setLoading("services-loading", false); document.getElementById("services-empty").classList.remove("hidden"); });
+
+    // 3. Occupancy
+    setLoading("occupancy-loading", true);
+    apiFetch(`/reports/barbers/occupancy?${qs}`)
+      .then(data => {
+        setLoading("occupancy-loading", false);
+        const items = Array.isArray(data) ? data : (data.items ?? []);
+        renderTable("occupancy-body", "occupancy-empty", items.map(b => [
+          { val: b.barberName ?? b.name ?? "—" },
+          { val: b.bookedMinutes ?? b.booked_minutes ?? "—", cls: "px-4 py-3 text-sm text-base-100 hidden sm:table-cell" },
+          { val: b.rangeMinutes ?? b.range_minutes ?? "—", cls: "px-4 py-3 text-sm text-base-100 hidden sm:table-cell" },
+          { val: `${b.occupancyPct ?? b.occupancy_pct ?? "—"}%`, cls: "px-4 py-3 text-sm text-accent-400 font-semibold" },
+        ]));
+      })
+      .catch(() => { setLoading("occupancy-loading", false); document.getElementById("occupancy-empty").classList.remove("hidden"); });
+
+    // 4. Commissions
+    setLoading("commissions-loading", true);
+    apiFetch(`/reports/barbers/commissions?${qs}`)
+      .then(data => {
+        setLoading("commissions-loading", false);
+        const items = Array.isArray(data) ? data : (data.items ?? []);
+        renderTable("commissions-body", "commissions-empty", items.map(b => [
+          { val: b.barberName ?? b.name ?? "—" },
+          { val: `${b.commissionPct ?? b.commission_pct ?? "—"}%`, cls: "px-4 py-3 text-sm text-base-100 hidden sm:table-cell" },
+          { val: fmtCents(b.baseCents ?? b.base_cents ?? 0), cls: "px-4 py-3 text-sm text-base-100" },
+          { val: fmtCents(b.commissionCents ?? b.commission_cents ?? 0), cls: "px-4 py-3 text-sm text-accent-400 font-semibold" },
+        ]));
+      })
+      .catch(() => { setLoading("commissions-loading", false); document.getElementById("commissions-empty").classList.remove("hidden"); });
+
+    // 5. Top customers
+    setLoading("customers-loading", true);
+    apiFetch(`/reports/customers/top?${qs}`)
+      .then(data => {
+        setLoading("customers-loading", false);
+        const items = Array.isArray(data) ? data : (data.items ?? []);
+        renderTable("customers-body", "customers-empty", items.map(c => [
+          { val: c.fullName ?? c.customerName ?? c.name ?? "—" },
+          { val: c.visits ?? c.visitCount ?? "—", cls: "px-4 py-3 text-sm text-base-100" },
+          { val: fmtCents(c.spentCents ?? c.spent_cents ?? 0), cls: "px-4 py-3 text-sm text-accent-400 font-semibold" },
+        ]));
+      })
+      .catch(() => { setLoading("customers-loading", false); document.getElementById("customers-empty").classList.remove("hidden"); });
+  }
+</script>

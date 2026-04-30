@@ -1,0 +1,458 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Ventas / Caja" section="sales">
+
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
+    <!-- Left panel: open sale / sale controls -->
+    <div class="lg:col-span-2 space-y-4">
+
+      <!-- Open sale -->
+      <div id="panel-open-sale" class="bg-base-900 border border-base-800 rounded-xl p-5 space-y-4">
+        <h3 class="text-base-100 font-semibold">Abrir Venta</h3>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Cliente (buscar)</label>
+          <div class="flex gap-2 mt-1">
+            <input id="open-customer-search" type="text" placeholder="Nombre del cliente…"
+              class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm flex-1" />
+            <button id="btn-search-customer" class="px-3 py-2 text-xs rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Buscar</button>
+          </div>
+          <div id="customer-results" class="hidden mt-1 bg-base-800 border border-base-700 rounded-lg divide-y divide-base-700 max-h-40 overflow-y-auto"></div>
+          <input type="hidden" id="open-customer-id" />
+          <p id="open-customer-name" class="hidden text-xs text-accent-400 mt-1"></p>
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Barbero (buscar)</label>
+          <div class="flex gap-2 mt-1">
+            <input id="open-barber-search" type="text" placeholder="Nombre del barbero…"
+              class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm flex-1" />
+            <button id="btn-search-barber" class="px-3 py-2 text-xs rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Buscar</button>
+          </div>
+          <div id="barber-results" class="hidden mt-1 bg-base-800 border border-base-700 rounded-lg divide-y divide-base-700 max-h-40 overflow-y-auto"></div>
+          <input type="hidden" id="open-barber-id" />
+          <p id="open-barber-name" class="hidden text-xs text-accent-400 mt-1"></p>
+        </div>
+        <button id="btn-open-sale" class="w-full px-4 py-2.5 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors">Abrir Venta</button>
+      </div>
+
+      <!-- Active sale controls (shown once sale is open) -->
+      <div id="panel-active-sale" class="hidden space-y-4">
+        <div class="bg-base-900 border border-base-800 rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base-100 font-semibold">Venta Activa</h3>
+            <span id="sale-id-badge" class="text-xs text-base-500 font-mono"></span>
+          </div>
+          <div id="sale-meta" class="text-xs text-base-500 space-y-0.5"></div>
+        </div>
+
+        <!-- Add item -->
+        <div class="bg-base-900 border border-base-800 rounded-xl p-5 space-y-3">
+          <h4 class="text-sm font-medium text-base-300">Agregar ítem</h4>
+          <div class="flex gap-2">
+            <button id="kind-service" class="flex-1 px-3 py-1.5 text-xs rounded-lg bg-accent-900/40 text-accent-400 border border-accent-700/40 font-medium">Servicio</button>
+            <button id="kind-product" class="flex-1 px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 border border-base-700">Producto</button>
+          </div>
+          <input id="item-search-input" type="text" placeholder="Buscar nombre…"
+            class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          <div id="item-search-results" class="hidden bg-base-800 border border-base-700 rounded-lg divide-y divide-base-700 max-h-40 overflow-y-auto"></div>
+          <input type="hidden" id="item-selected-id" />
+          <p id="item-selected-name" class="hidden text-xs text-accent-400"></p>
+          <div class="flex gap-2 items-center">
+            <label class="text-xs text-base-500 shrink-0">Qty</label>
+            <input id="item-qty" type="number" min="1" value="1"
+              class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-1.5 text-sm w-20" />
+            <button id="btn-add-item" class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Agregar</button>
+          </div>
+        </div>
+
+        <!-- Add payment -->
+        <div class="bg-base-900 border border-base-800 rounded-xl p-5 space-y-3">
+          <h4 class="text-sm font-medium text-base-300">Registrar pago</h4>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Método</label>
+            <select id="payment-method" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full">
+              <option value="CASH">Efectivo</option>
+              <option value="CARD">Tarjeta</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="YAPE">Yape</option>
+              <option value="PLIN">Plin</option>
+              <option value="OTHER">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Monto (COP)</label>
+            <input id="payment-amount" type="number" min="0" placeholder="25000"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Referencia</label>
+            <input id="payment-reference" type="text" placeholder="Nro. transacción…"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <button id="btn-add-payment" class="w-full px-3 py-2 text-xs font-medium rounded-lg bg-green-800/60 text-green-300 border border-green-700/40 hover:bg-green-700/60">Registrar Pago</button>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2">
+          <button id="btn-close-sale" disabled class="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 disabled:opacity-40 disabled:cursor-not-allowed">Cerrar Venta</button>
+          <button id="btn-void-sale" class="px-4 py-2.5 text-sm rounded-lg bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-900/50">Anular</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel: summary -->
+    <div class="lg:col-span-3 space-y-4">
+      <div id="panel-summary-empty" class="bg-base-900 border border-base-800 rounded-xl p-12 text-center">
+        <p class="text-base-500 text-sm">Abre una venta para comenzar.</p>
+      </div>
+
+      <div id="panel-summary" class="hidden space-y-4">
+        <!-- Items -->
+        <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 bg-base-800/60 flex items-center justify-between">
+            <h4 class="text-xs font-medium text-base-500 uppercase tracking-widest">Ítems</h4>
+          </div>
+          <div id="items-list" class="divide-y divide-base-800 min-h-[60px]">
+            <p class="p-4 text-sm text-base-500">Sin ítems aún.</p>
+          </div>
+        </div>
+
+        <!-- Payments -->
+        <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 bg-base-800/60">
+            <h4 class="text-xs font-medium text-base-500 uppercase tracking-widest">Pagos</h4>
+          </div>
+          <div id="payments-list" class="divide-y divide-base-800 min-h-[40px]">
+            <p class="p-4 text-sm text-base-500">Sin pagos aún.</p>
+          </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="bg-base-900 border border-base-800 rounded-xl p-5 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-base-500">Subtotal</span>
+            <span id="total-label" class="text-base-100">—</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-base-500">Pagado</span>
+            <span id="paid-label" class="text-green-400">—</span>
+          </div>
+          <div class="border-t border-base-800 pt-2 flex justify-between font-semibold">
+            <span class="text-base-400">Pendiente</span>
+            <span id="pending-label" class="text-accent-400 text-base">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Void modal -->
+  <div id="modal-void" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-4">Anular Venta</h3>
+      <div>
+        <label class="text-xs uppercase tracking-widest text-base-500">Motivo</label>
+        <input id="void-reason" type="text" placeholder="Motivo de anulación"
+          class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="void-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="void-confirm" class="px-4 py-2 text-sm font-medium rounded-lg bg-red-700 text-white hover:bg-red-600">Anular</button>
+      </div>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser();
+  const roles = user.roles.map(r => r.toUpperCase());
+  if (!roles.some(r => ["ADMIN","RECEPTIONIST"].includes(r))) {
+    window.location.href = "/dashboard/";
+    throw new Error("redirect");
+  }
+
+  let activeSaleId = null;
+  let activeItemKind = "SERVICE";
+
+  function fmtCents(c) {
+    return (c / 100).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  }
+
+  function show(id) { document.getElementById(id)?.classList.remove("hidden"); }
+  function hide(id) { document.getElementById(id)?.classList.add("hidden"); }
+
+  // ── Customer search ──────────────────────────────────────────────────────────
+  document.getElementById("btn-search-customer").addEventListener("click", async () => {
+    const q = document.getElementById("open-customer-search").value.trim();
+    if (!q) return;
+    const results = document.getElementById("customer-results");
+    results.innerHTML = '<p class="p-3 text-sm text-base-500">Buscando…</p>';
+    results.classList.remove("hidden");
+    try {
+      const data = await apiFetch(`/customers?search=${encodeURIComponent(q)}&limit=10&page=1`);
+      const items = data.items ?? data ?? [];
+      results.innerHTML = "";
+      if (items.length === 0) { results.innerHTML = '<p class="p-3 text-sm text-base-500">Sin resultados.</p>'; return; }
+      items.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "px-3 py-2 hover:bg-base-700 cursor-pointer";
+        div.innerHTML = `<p class="text-sm text-base-100">${c.fullName}</p><p class="text-xs text-base-500">${c.phone ?? ""}</p>`;
+        div.addEventListener("click", () => {
+          document.getElementById("open-customer-id").value = c.id;
+          document.getElementById("open-customer-name").textContent = `Cliente: ${c.fullName}`;
+          show("open-customer-name");
+          results.classList.add("hidden");
+          document.getElementById("open-customer-search").value = c.fullName;
+        });
+        results.appendChild(div);
+      });
+    } catch { results.innerHTML = '<p class="p-3 text-sm text-base-500">Error.</p>'; }
+  });
+
+  // ── Barber search ────────────────────────────────────────────────────────────
+  document.getElementById("btn-search-barber").addEventListener("click", async () => {
+    const q = document.getElementById("open-barber-search").value.trim();
+    if (!q) return;
+    const results = document.getElementById("barber-results");
+    results.innerHTML = '<p class="p-3 text-sm text-base-500">Buscando…</p>';
+    results.classList.remove("hidden");
+    try {
+      const data = await apiFetch(`/barbers?search=${encodeURIComponent(q)}&limit=10&page=1`);
+      const items = data.items ?? data ?? [];
+      results.innerHTML = "";
+      if (items.length === 0) { results.innerHTML = '<p class="p-3 text-sm text-base-500">Sin resultados.</p>'; return; }
+      items.forEach(b => {
+        const div = document.createElement("div");
+        div.className = "px-3 py-2 hover:bg-base-700 cursor-pointer";
+        div.innerHTML = `<p class="text-sm text-base-100">${b.displayName}</p><p class="text-xs text-base-500">${b.specialty ?? ""}</p>`;
+        div.addEventListener("click", () => {
+          document.getElementById("open-barber-id").value = b.id;
+          document.getElementById("open-barber-name").textContent = `Barbero: ${b.displayName}`;
+          show("open-barber-name");
+          results.classList.add("hidden");
+          document.getElementById("open-barber-search").value = b.displayName;
+        });
+        results.appendChild(div);
+      });
+    } catch { results.innerHTML = '<p class="p-3 text-sm text-base-500">Error.</p>'; }
+  });
+
+  // ── Open sale ────────────────────────────────────────────────────────────────
+  document.getElementById("btn-open-sale").addEventListener("click", async () => {
+    const payload = {};
+    const customerId = document.getElementById("open-customer-id").value;
+    const barberId = document.getElementById("open-barber-id").value;
+    if (customerId) payload.customerId = customerId;
+    if (barberId) payload.barberId = barberId;
+    try {
+      const sale = await apiFetch("/sales", { method: "POST", body: JSON.stringify(payload) });
+      activeSaleId = sale.id;
+      window.toast("Venta abierta", "success");
+      hide("panel-open-sale");
+      show("panel-active-sale");
+      hide("panel-summary-empty");
+      show("panel-summary");
+      document.getElementById("sale-id-badge").textContent = `#${sale.id.slice(0,8)}`;
+      const meta = [];
+      if (sale.customer?.fullName || customerId) meta.push(`Cliente: ${sale.customer?.fullName ?? customerId}`);
+      if (sale.barber?.displayName || barberId) meta.push(`Barbero: ${sale.barber?.displayName ?? barberId}`);
+      document.getElementById("sale-meta").innerHTML = meta.map(m => `<p>${m}</p>`).join("");
+      refreshSaleSummary();
+    } catch (err) { window.toast(err.message ?? "Error al abrir venta", "error"); }
+  });
+
+  // ── Item kind toggle ─────────────────────────────────────────────────────────
+  document.getElementById("kind-service").addEventListener("click", () => {
+    activeItemKind = "SERVICE";
+    document.getElementById("kind-service").className = "flex-1 px-3 py-1.5 text-xs rounded-lg bg-accent-900/40 text-accent-400 border border-accent-700/40 font-medium";
+    document.getElementById("kind-product").className = "flex-1 px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 border border-base-700";
+    document.getElementById("item-selected-id").value = "";
+    hide("item-selected-name");
+    document.getElementById("item-search-input").value = "";
+  });
+  document.getElementById("kind-product").addEventListener("click", () => {
+    activeItemKind = "PRODUCT";
+    document.getElementById("kind-product").className = "flex-1 px-3 py-1.5 text-xs rounded-lg bg-accent-900/40 text-accent-400 border border-accent-700/40 font-medium";
+    document.getElementById("kind-service").className = "flex-1 px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-400 border border-base-700";
+    document.getElementById("item-selected-id").value = "";
+    hide("item-selected-name");
+    document.getElementById("item-search-input").value = "";
+  });
+
+  // ── Item search ──────────────────────────────────────────────────────────────
+  document.getElementById("item-search-input").addEventListener("input", async (e) => {
+    const q = e.target.value.trim();
+    const results = document.getElementById("item-search-results");
+    if (q.length < 2) { results.classList.add("hidden"); return; }
+    results.innerHTML = '<p class="p-3 text-sm text-base-500">Buscando…</p>';
+    results.classList.remove("hidden");
+    try {
+      const endpoint = activeItemKind === "SERVICE"
+        ? `/services?search=${encodeURIComponent(q)}&onlyActive=true&limit=10&page=1`
+        : `/inventory/products?search=${encodeURIComponent(q)}&limit=10&page=1`;
+      const data = await apiFetch(endpoint);
+      const items = data.items ?? data ?? [];
+      results.innerHTML = "";
+      if (items.length === 0) { results.innerHTML = '<p class="p-3 text-sm text-base-500">Sin resultados.</p>'; return; }
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "px-3 py-2 hover:bg-base-700 cursor-pointer";
+        const price = activeItemKind === "SERVICE" ? fmtCents(item.priceCents) : fmtCents(item.salePriceCents);
+        div.innerHTML = `<p class="text-sm text-base-100">${item.name}</p><p class="text-xs text-base-500">${price}</p>`;
+        div.addEventListener("click", () => {
+          document.getElementById("item-selected-id").value = item.id;
+          document.getElementById("item-selected-name").textContent = `Seleccionado: ${item.name}`;
+          show("item-selected-name");
+          results.classList.add("hidden");
+          e.target.value = item.name;
+        });
+        results.appendChild(div);
+      });
+    } catch { results.innerHTML = '<p class="p-3 text-sm text-base-500">Error.</p>'; }
+  });
+
+  // ── Add item ─────────────────────────────────────────────────────────────────
+  document.getElementById("btn-add-item").addEventListener("click", async () => {
+    if (!activeSaleId) return;
+    const id = document.getElementById("item-selected-id").value;
+    const qty = parseInt(document.getElementById("item-qty").value) || 1;
+    if (!id) { window.toast("Selecciona un servicio o producto", "error"); return; }
+    const payload = { kind: activeItemKind, qty };
+    if (activeItemKind === "SERVICE") payload.serviceId = id;
+    else payload.productId = id;
+    try {
+      await apiFetch(`/sales/${activeSaleId}/items`, { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Ítem agregado", "success");
+      document.getElementById("item-selected-id").value = "";
+      document.getElementById("item-search-input").value = "";
+      hide("item-selected-name");
+      refreshSaleSummary();
+    } catch (err) { window.toast(err.message ?? "Error al agregar ítem", "error"); }
+  });
+
+  // ── Add payment ──────────────────────────────────────────────────────────────
+  document.getElementById("btn-add-payment").addEventListener("click", async () => {
+    if (!activeSaleId) return;
+    const method = document.getElementById("payment-method").value;
+    const amountVal = parseInt(document.getElementById("payment-amount").value);
+    if (!amountVal || amountVal < 1) { window.toast("Ingresa un monto válido", "error"); return; }
+    const payload = { method, amountCents: amountVal * 100 };
+    const ref = document.getElementById("payment-reference").value.trim();
+    if (ref) payload.reference = ref;
+    try {
+      await apiFetch(`/sales/${activeSaleId}/payments`, { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Pago registrado", "success");
+      document.getElementById("payment-amount").value = "";
+      document.getElementById("payment-reference").value = "";
+      refreshSaleSummary();
+    } catch (err) { window.toast(err.message ?? "Error al registrar pago", "error"); }
+  });
+
+  // ── Refresh summary ──────────────────────────────────────────────────────────
+  async function refreshSaleSummary() {
+    if (!activeSaleId) return;
+    try {
+      const sale = await apiFetch(`/sales/${activeSaleId}`);
+      const items = sale.items ?? [];
+      const payments = sale.payments ?? [];
+
+      const itemsList = document.getElementById("items-list");
+      if (items.length === 0) {
+        itemsList.innerHTML = '<p class="p-4 text-sm text-base-500">Sin ítems aún.</p>';
+      } else {
+        itemsList.innerHTML = "";
+        items.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "px-4 py-3 flex items-center justify-between";
+          const name = item.service?.name ?? item.product?.name ?? item.serviceId ?? item.productId ?? "Ítem";
+          const price = fmtCents(item.unitCents ?? item.totalCents ?? 0);
+          div.innerHTML = `
+            <div>
+              <p class="text-sm text-base-100">${name}</p>
+              <p class="text-xs text-base-500">${item.kind ?? ""} × ${item.qty ?? 1}</p>
+            </div>
+            <span class="text-sm text-accent-400">${price}</span>`;
+          itemsList.appendChild(div);
+        });
+      }
+
+      const paymentsList = document.getElementById("payments-list");
+      if (payments.length === 0) {
+        paymentsList.innerHTML = '<p class="p-4 text-sm text-base-500">Sin pagos aún.</p>';
+      } else {
+        paymentsList.innerHTML = "";
+        payments.forEach(p => {
+          const div = document.createElement("div");
+          div.className = "px-4 py-3 flex items-center justify-between";
+          div.innerHTML = `
+            <div>
+              <p class="text-sm text-base-100">${p.method}</p>
+              ${p.reference ? `<p class="text-xs text-base-500">${p.reference}</p>` : ""}
+            </div>
+            <span class="text-sm text-green-400">${fmtCents(p.amountCents)}</span>`;
+          paymentsList.appendChild(div);
+        });
+      }
+
+      const totalCents = sale.totalCents ?? items.reduce((s, i) => s + (i.unitCents ?? 0) * (i.qty ?? 1), 0);
+      const paidCents = sale.paidCents ?? payments.reduce((s, p) => s + (p.amountCents ?? 0), 0);
+      const pendingCents = Math.max(0, totalCents - paidCents);
+
+      document.getElementById("total-label").textContent = fmtCents(totalCents);
+      document.getElementById("paid-label").textContent = fmtCents(paidCents);
+      document.getElementById("pending-label").textContent = fmtCents(pendingCents);
+
+      document.getElementById("btn-close-sale").disabled = pendingCents > 0 || items.length === 0;
+    } catch (err) {
+      window.toast(err.message ?? "Error al cargar resumen", "error");
+    }
+  }
+
+  // ── Close sale ───────────────────────────────────────────────────────────────
+  document.getElementById("btn-close-sale").addEventListener("click", async () => {
+    if (!activeSaleId) return;
+    try {
+      await apiFetch(`/sales/${activeSaleId}/close`, { method: "POST" });
+      window.toast("Venta cerrada exitosamente", "success");
+      resetSaleUI();
+    } catch (err) { window.toast(err.message ?? "Error al cerrar venta", "error"); }
+  });
+
+  // ── Void sale ────────────────────────────────────────────────────────────────
+  document.getElementById("btn-void-sale").addEventListener("click", () => {
+    document.getElementById("void-reason").value = "";
+    show("modal-void");
+  });
+  document.getElementById("void-close").addEventListener("click", () => hide("modal-void"));
+  document.getElementById("modal-void").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) hide("modal-void");
+  });
+  document.getElementById("void-confirm").addEventListener("click", async () => {
+    if (!activeSaleId) return;
+    const reason = document.getElementById("void-reason").value.trim();
+    try {
+      await apiFetch(`/sales/${activeSaleId}/void`, { method: "POST", body: JSON.stringify(reason ? { reason } : {}) });
+      window.toast("Venta anulada", "success");
+      hide("modal-void");
+      resetSaleUI();
+    } catch (err) { window.toast(err.message ?? "Error al anular venta", "error"); }
+  });
+
+  function resetSaleUI() {
+    activeSaleId = null;
+    show("panel-open-sale");
+    hide("panel-active-sale");
+    show("panel-summary-empty");
+    hide("panel-summary");
+    document.getElementById("open-customer-id").value = "";
+    document.getElementById("open-barber-id").value = "";
+    document.getElementById("open-customer-search").value = "";
+    document.getElementById("open-barber-search").value = "";
+    hide("open-customer-name");
+    hide("open-barber-name");
+  }
+</script>

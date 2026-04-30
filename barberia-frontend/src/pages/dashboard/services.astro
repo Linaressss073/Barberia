@@ -1,0 +1,295 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Servicios" section="services">
+
+  <div class="space-y-5">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div class="flex gap-2">
+        <input id="search-input" type="text" placeholder="Buscar servicio…"
+          class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-48 sm:w-64" />
+        <button id="btn-search" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Buscar</button>
+      </div>
+      <button id="btn-open-create" class="hidden px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">+ Nuevo Servicio</button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Nombre</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden sm:table-cell">Duración</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Precio</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Estado</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-base-500 uppercase tracking-widest">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="services-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="services-empty" class="hidden p-12 text-center text-base-500 text-sm">No hay servicios registrados.</div>
+      <div id="services-loading" class="p-8 text-center text-base-500 text-sm">Cargando servicios…</div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between">
+      <button id="btn-prev" disabled class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 disabled:opacity-40 disabled:cursor-not-allowed">← Anterior</button>
+      <span id="page-info" class="text-sm text-base-500">Página 1</span>
+      <button id="btn-next" disabled class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- Create service modal -->
+  <div id="modal-create" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Nuevo Servicio</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Nombre *</label>
+          <input id="s-name" type="text" placeholder="Nombre del servicio"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Descripción</label>
+          <textarea id="s-description" rows="2" placeholder="Descripción del servicio…"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full resize-none"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Duración (min) *</label>
+            <input id="s-duration" type="number" min="1" placeholder="30"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Precio (COP) *</label>
+            <input id="s-price" type="number" min="0" placeholder="25000"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            <p class="text-xs text-base-600 mt-1">Valor en pesos (ej. 25000)</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="create-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="create-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Crear Servicio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit service modal -->
+  <div id="modal-edit" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Editar Servicio</h3>
+      <input type="hidden" id="edit-id" />
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Nombre</label>
+          <input id="edit-name" type="text"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Descripción</label>
+          <textarea id="edit-description" rows="2"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full resize-none"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Duración (min)</label>
+            <input id="edit-duration" type="number" min="1"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Precio (COP)</label>
+            <input id="edit-price" type="number" min="0"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            <p class="text-xs text-base-600 mt-1">Valor en pesos (ej. 25000)</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <input id="edit-active" type="checkbox" class="rounded" />
+          <label class="text-sm text-base-300">Activo</label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="edit-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="edit-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser();
+  const roles = user.roles.map(r => r.toUpperCase());
+  if (!roles.some(r => ["ADMIN","RECEPTIONIST"].includes(r))) {
+    window.location.href = "/dashboard/";
+    throw new Error("redirect");
+  }
+  const isAdmin = roles.includes("ADMIN");
+
+  if (isAdmin) {
+    document.getElementById("btn-open-create").classList.remove("hidden");
+  }
+
+  let page = 1;
+  let totalPages = 1;
+  let search = "";
+
+  function fmtCents(c) {
+    return (c / 100).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  }
+
+  async function loadServices() {
+    const body = document.getElementById("services-body");
+    const empty = document.getElementById("services-empty");
+    const loading = document.getElementById("services-loading");
+    body.innerHTML = "";
+    empty.classList.add("hidden");
+    loading.classList.remove("hidden");
+    try {
+      const data = await apiFetch(`/services?page=${page}&limit=20&search=${encodeURIComponent(search)}`);
+      loading.classList.add("hidden");
+      const items = data.items ?? data ?? [];
+      const total = data.total ?? items.length;
+      totalPages = Math.max(1, Math.ceil(total / 20));
+      document.getElementById("page-info").textContent = `Página ${page} de ${totalPages}`;
+      document.getElementById("btn-prev").disabled = page <= 1;
+      document.getElementById("btn-next").disabled = page >= totalPages;
+      if (items.length === 0) { empty.classList.remove("hidden"); return; }
+
+      items.forEach(svc => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-base-800/30 transition-colors";
+        const activeBadge = svc.active
+          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-900/40 text-green-400 border border-green-800/40">Activo</span>`
+          : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-base-700/40 text-base-500 border border-base-700/40">Inactivo</span>`;
+        const adminActions = isAdmin ? `
+          <button class="btn-toggle-active px-2.5 py-1 text-xs rounded-md ${svc.active ? "bg-base-800 text-base-400 border border-base-700 hover:text-red-400" : "bg-green-900/20 text-green-400 border border-green-800/30 hover:bg-green-900/40"}" data-id="${svc.id}" data-active="${svc.active}">${svc.active ? "Desactivar" : "Activar"}</button>
+          <button class="btn-edit px-2.5 py-1 text-xs rounded-md bg-base-800 text-base-100 hover:bg-base-700 border border-base-700" data-id="${svc.id}" data-name="${svc.name}" data-description="${svc.description ?? ''}" data-duration="${svc.durationMin}" data-price="${svc.priceCents}" data-active="${svc.active}">Editar</button>
+          <button class="btn-delete px-2.5 py-1 text-xs rounded-md bg-red-900/20 text-red-400 border border-red-800/30 hover:bg-red-900/40" data-id="${svc.id}">Eliminar</button>` : "";
+        tr.innerHTML = `
+          <td class="px-4 py-3">
+            <p class="text-sm text-base-100 font-medium">${svc.name}</p>
+            ${svc.description ? `<p class="text-xs text-base-500 line-clamp-1 mt-0.5">${svc.description}</p>` : ""}
+          </td>
+          <td class="px-4 py-3 text-sm text-base-400 hidden sm:table-cell">${svc.durationMin} min</td>
+          <td class="px-4 py-3 text-sm text-accent-400 font-semibold">${fmtCents(svc.priceCents)}</td>
+          <td class="px-4 py-3">${activeBadge}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-1.5">${adminActions}</div>
+          </td>`;
+        body.appendChild(tr);
+      });
+
+      if (isAdmin) {
+        body.querySelectorAll(".btn-toggle-active").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const active = btn.dataset.active === "true";
+            try {
+              await apiFetch(`/services/${btn.dataset.id}`, { method: "PATCH", body: JSON.stringify({ active: !active }) });
+              window.toast(`Servicio ${!active ? "activado" : "desactivado"}`, "success");
+              loadServices();
+            } catch (err) { window.toast(err.message ?? "Error", "error"); }
+          });
+        });
+        body.querySelectorAll(".btn-edit").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.getElementById("edit-id").value = btn.dataset.id;
+            document.getElementById("edit-name").value = btn.dataset.name;
+            document.getElementById("edit-description").value = btn.dataset.description;
+            document.getElementById("edit-duration").value = btn.dataset.duration;
+            document.getElementById("edit-price").value = Math.round(parseInt(btn.dataset.price) / 100);
+            document.getElementById("edit-active").checked = btn.dataset.active === "true";
+            document.getElementById("modal-edit").classList.remove("hidden");
+          });
+        });
+        body.querySelectorAll(".btn-delete").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("¿Eliminar este servicio?")) return;
+            try {
+              await apiFetch(`/services/${btn.dataset.id}`, { method: "DELETE" });
+              window.toast("Servicio eliminado", "success");
+              loadServices();
+            } catch (err) { window.toast(err.message ?? "Error al eliminar", "error"); }
+          });
+        });
+      }
+    } catch (err) {
+      loading.classList.add("hidden");
+      window.toast(err.message ?? "Error al cargar servicios", "error");
+    }
+  }
+
+  // Search
+  document.getElementById("btn-search").addEventListener("click", () => {
+    search = document.getElementById("search-input").value.trim(); page = 1; loadServices();
+  });
+  document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { search = e.target.value.trim(); page = 1; loadServices(); }
+  });
+
+  // Pagination
+  document.getElementById("btn-prev").addEventListener("click", () => { if (page > 1) { page--; loadServices(); } });
+  document.getElementById("btn-next").addEventListener("click", () => { if (page < totalPages) { page++; loadServices(); } });
+
+  // Create
+  document.getElementById("btn-open-create").addEventListener("click", () => {
+    document.getElementById("modal-create").classList.remove("hidden");
+  });
+  document.getElementById("create-close").addEventListener("click", () => {
+    document.getElementById("modal-create").classList.add("hidden");
+  });
+  document.getElementById("modal-create").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("create-submit").addEventListener("click", async () => {
+    const name = document.getElementById("s-name").value.trim();
+    const durationMin = parseInt(document.getElementById("s-duration").value);
+    const priceVal = parseInt(document.getElementById("s-price").value);
+    if (!name || isNaN(durationMin) || isNaN(priceVal)) {
+      window.toast("Completa todos los campos obligatorios", "error"); return;
+    }
+    const payload = { name, durationMin, priceCents: priceVal * 100 };
+    const desc = document.getElementById("s-description").value.trim();
+    if (desc) payload.description = desc;
+    try {
+      await apiFetch("/services", { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Servicio creado", "success");
+      document.getElementById("modal-create").classList.add("hidden");
+      loadServices();
+    } catch (err) { window.toast(err.message ?? "Error al crear servicio", "error"); }
+  });
+
+  // Edit
+  document.getElementById("edit-close").addEventListener("click", () => {
+    document.getElementById("modal-edit").classList.add("hidden");
+  });
+  document.getElementById("modal-edit").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("edit-submit").addEventListener("click", async () => {
+    const id = document.getElementById("edit-id").value;
+    const payload = {};
+    const name = document.getElementById("edit-name").value.trim();
+    if (name) payload.name = name;
+    const desc = document.getElementById("edit-description").value.trim();
+    if (desc) payload.description = desc;
+    const dur = parseInt(document.getElementById("edit-duration").value);
+    if (!isNaN(dur)) payload.durationMin = dur;
+    const priceVal = parseInt(document.getElementById("edit-price").value);
+    if (!isNaN(priceVal)) payload.priceCents = priceVal * 100;
+    payload.active = document.getElementById("edit-active").checked;
+    try {
+      await apiFetch(`/services/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      window.toast("Servicio actualizado", "success");
+      document.getElementById("modal-edit").classList.add("hidden");
+      loadServices();
+    } catch (err) { window.toast(err.message ?? "Error al actualizar", "error"); }
+  });
+
+  loadServices();
+</script>

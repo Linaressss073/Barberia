@@ -1,0 +1,425 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Clientes" section="customers">
+
+  <div class="space-y-5">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div class="flex gap-2 flex-1">
+        <input id="search-input" type="text" placeholder="Buscar cliente…"
+          class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm flex-1 max-w-xs" />
+        <button id="btn-search" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Buscar</button>
+      </div>
+      <button id="btn-open-create" class="px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors">+ Nuevo Cliente</button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Nombre</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden sm:table-cell">Documento</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden md:table-cell">Teléfono</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Puntos</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-base-500 uppercase tracking-widest">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="customers-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="customers-empty" class="hidden p-12 text-center text-base-500 text-sm">No hay clientes aún.</div>
+      <div id="customers-loading" class="p-8 text-center text-base-500 text-sm">Cargando clientes…</div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between">
+      <button id="btn-prev" disabled class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 disabled:opacity-40 disabled:cursor-not-allowed">← Anterior</button>
+      <span id="page-info" class="text-sm text-base-500">Página 1</span>
+      <button id="btn-next" disabled class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- Create customer modal -->
+  <div id="modal-create" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Nuevo Cliente</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Nombre completo *</label>
+          <input id="c-fullname" type="text" placeholder="Nombre completo"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Teléfono</label>
+          <input id="c-phone" type="text" placeholder="+57 300 000 0000"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Documento</label>
+          <input id="c-document" type="text" placeholder="Cédula o ID"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Fecha de nacimiento</label>
+          <input id="c-birthdate" type="date"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Vincular a usuario (UUID, opcional)</label>
+          <input id="c-userid" type="text" placeholder="UUID del usuario"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="create-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="create-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Crear Cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expanded detail panel (inline, shown below row) -->
+  <div id="detail-panel" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div class="bg-base-900 border border-base-800 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-base-800">
+        <h3 id="detail-title" class="text-base-100 font-semibold text-lg">Detalle de cliente</h3>
+        <button id="detail-close" class="text-base-500 hover:text-base-100 transition-colors">
+          <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-6">
+        <!-- Edit form -->
+        <div>
+          <h4 class="text-xs uppercase tracking-widest text-base-500 mb-3">Editar información</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
+              <label class="text-xs uppercase tracking-widest text-base-500">Nombre *</label>
+              <input id="edit-fullname" type="text" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-widest text-base-500">Teléfono</label>
+              <input id="edit-phone" type="text" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-widest text-base-500">Documento</label>
+              <input id="edit-document" type="text" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            </div>
+            <div>
+              <label class="text-xs uppercase tracking-widest text-base-500">Nacimiento</label>
+              <input id="edit-birthdate" type="date" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            </div>
+          </div>
+          <input type="hidden" id="edit-id" />
+          <button id="btn-save-edit" class="mt-3 px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Guardar cambios</button>
+        </div>
+
+        <!-- Loyalty -->
+        <div class="border-t border-base-800 pt-5">
+          <h4 class="text-xs uppercase tracking-widest text-base-500 mb-3">Puntos de Lealtad</h4>
+          <p class="text-2xl font-semibold text-accent-400 font-display mb-3" id="detail-loyalty">—</p>
+          <div class="flex gap-2 flex-wrap">
+            <input id="loyalty-pts-input" type="number" min="1" placeholder="Puntos"
+              class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-24" />
+            <button id="btn-add-pts" class="px-4 py-2 text-sm rounded-lg bg-green-800/50 text-green-300 border border-green-700/40 hover:bg-green-700/50">+ Agregar</button>
+            <button id="btn-redeem-pts" class="px-4 py-2 text-sm rounded-lg bg-orange-900/40 text-orange-400 border border-orange-800/40 hover:bg-orange-800/50">− Canjear</button>
+          </div>
+        </div>
+
+        <!-- Memberships -->
+        <div class="border-t border-base-800 pt-5">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs uppercase tracking-widest text-base-500">Membresías</h4>
+            <button id="btn-add-membership" class="px-3 py-1.5 text-xs rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">+ Agregar</button>
+          </div>
+          <div id="memberships-list" class="space-y-2">
+            <p class="text-sm text-base-500">Cargando…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add membership modal -->
+  <div id="modal-membership" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Agregar Membresía</h3>
+      <input type="hidden" id="mem-customer-id" />
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Plan *</label>
+          <input id="mem-plan" type="text" placeholder="MONTHLY, ANNUAL, etc."
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Inicio *</label>
+            <input id="mem-starts" type="date" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Fin *</label>
+            <input id="mem-ends" type="date" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Descuento % (0-100) *</label>
+          <input id="mem-discount" type="number" min="0" max="100" placeholder="10"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="membership-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="membership-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser();
+  const roles = user.roles.map(r => r.toUpperCase());
+  if (!roles.some(r => ["ADMIN","RECEPTIONIST"].includes(r))) {
+    window.location.href = "/dashboard/";
+    throw new Error("redirect");
+  }
+  const isAdmin = roles.includes("ADMIN");
+
+  let page = 1;
+  let totalPages = 1;
+  let search = "";
+  let activeCustomerId = null;
+
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  async function loadCustomers() {
+    const body = document.getElementById("customers-body");
+    const empty = document.getElementById("customers-empty");
+    const loading = document.getElementById("customers-loading");
+    body.innerHTML = "";
+    empty.classList.add("hidden");
+    loading.classList.remove("hidden");
+    try {
+      const data = await apiFetch(`/customers?page=${page}&limit=20&search=${encodeURIComponent(search)}`);
+      loading.classList.add("hidden");
+      const items = data.items ?? data ?? [];
+      const total = data.total ?? items.length;
+      totalPages = Math.max(1, Math.ceil(total / 20));
+      document.getElementById("page-info").textContent = `Página ${page} de ${totalPages}`;
+      document.getElementById("btn-prev").disabled = page <= 1;
+      document.getElementById("btn-next").disabled = page >= totalPages;
+
+      if (items.length === 0) { empty.classList.remove("hidden"); return; }
+
+      items.forEach(c => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-base-800/30 transition-colors cursor-pointer";
+        tr.innerHTML = `
+          <td class="px-4 py-3 text-sm text-base-100 font-medium">${c.fullName}</td>
+          <td class="px-4 py-3 text-sm text-base-400 hidden sm:table-cell">${c.document ?? "—"}</td>
+          <td class="px-4 py-3 text-sm text-base-400 hidden md:table-cell">${c.phone ?? "—"}</td>
+          <td class="px-4 py-3 text-sm text-accent-400 font-semibold">${c.loyaltyPoints ?? 0}</td>
+          <td class="px-4 py-3 text-right">
+            <button class="btn-detail px-3 py-1.5 text-xs rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700" data-id="${c.id}">Ver</button>
+          </td>`;
+        body.appendChild(tr);
+      });
+
+      body.querySelectorAll(".btn-detail").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const cust = items.find(x => x.id === btn.dataset.id);
+          if (cust) openDetail(cust);
+        });
+      });
+    } catch (err) {
+      loading.classList.add("hidden");
+      window.toast(err.message ?? "Error al cargar clientes", "error");
+    }
+  }
+
+  function openDetail(c) {
+    activeCustomerId = c.id;
+    document.getElementById("detail-title").textContent = c.fullName;
+    document.getElementById("edit-id").value = c.id;
+    document.getElementById("edit-fullname").value = c.fullName;
+    document.getElementById("edit-phone").value = c.phone ?? "";
+    document.getElementById("edit-document").value = c.document ?? "";
+    document.getElementById("edit-birthdate").value = c.birthdate ? c.birthdate.split("T")[0] : "";
+    document.getElementById("detail-loyalty").textContent = String(c.loyaltyPoints ?? 0) + " pts";
+    document.getElementById("mem-customer-id").value = c.id;
+    document.getElementById("detail-panel").classList.remove("hidden");
+    loadMemberships(c.id);
+  }
+
+  async function loadMemberships(customerId) {
+    const list = document.getElementById("memberships-list");
+    list.innerHTML = '<p class="text-sm text-base-500">Cargando…</p>';
+    try {
+      const mems = await apiFetch(`/memberships/by-customer/${customerId}`);
+      const items = Array.isArray(mems) ? mems : (mems.items ?? []);
+      if (items.length === 0) {
+        list.innerHTML = '<p class="text-sm text-base-500">Sin membresías activas.</p>';
+        return;
+      }
+      list.innerHTML = "";
+      items.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "flex items-center justify-between bg-base-800/40 border border-base-700/50 rounded-lg px-3 py-2";
+        div.innerHTML = `
+          <div>
+            <span class="text-sm text-base-100 font-medium">${m.plan}</span>
+            <span class="ml-2 text-xs text-base-500">${fmtDate(m.startsAt)} — ${fmtDate(m.endsAt)}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-accent-400">${m.discountPct}% desc.</span>
+            ${isAdmin ? `<button class="btn-del-mem text-xs text-red-400 hover:text-red-300 transition-colors" data-mem-id="${m.id}">Eliminar</button>` : ""}
+          </div>`;
+        list.appendChild(div);
+      });
+      if (isAdmin) {
+        list.querySelectorAll(".btn-del-mem").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (!confirm("¿Eliminar membresía?")) return;
+            try {
+              await apiFetch(`/memberships/${btn.dataset.memId}`, { method: "DELETE" });
+              window.toast("Membresía eliminada", "success");
+              loadMemberships(activeCustomerId);
+            } catch (err) { window.toast(err.message ?? "Error", "error"); }
+          });
+        });
+      }
+    } catch { list.innerHTML = '<p class="text-sm text-base-500">Error al cargar membresías.</p>'; }
+  }
+
+  // Search
+  document.getElementById("btn-search").addEventListener("click", () => {
+    search = document.getElementById("search-input").value.trim();
+    page = 1;
+    loadCustomers();
+  });
+  document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { search = e.target.value.trim(); page = 1; loadCustomers(); }
+  });
+
+  // Pagination
+  document.getElementById("btn-prev").addEventListener("click", () => { if (page > 1) { page--; loadCustomers(); } });
+  document.getElementById("btn-next").addEventListener("click", () => { if (page < totalPages) { page++; loadCustomers(); } });
+
+  // Create customer
+  document.getElementById("btn-open-create").addEventListener("click", () => {
+    document.getElementById("modal-create").classList.remove("hidden");
+  });
+  document.getElementById("create-close").addEventListener("click", () => {
+    document.getElementById("modal-create").classList.add("hidden");
+  });
+  document.getElementById("modal-create").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("create-submit").addEventListener("click", async () => {
+    const fullName = document.getElementById("c-fullname").value.trim();
+    if (!fullName) { window.toast("El nombre es obligatorio", "error"); return; }
+    const payload = { fullName };
+    const phone = document.getElementById("c-phone").value.trim();
+    const doc = document.getElementById("c-document").value.trim();
+    const bdate = document.getElementById("c-birthdate").value;
+    const userId = document.getElementById("c-userid").value.trim();
+    if (phone) payload.phone = phone;
+    if (doc) payload.document = doc;
+    if (bdate) payload.birthdate = new Date(bdate).toISOString();
+    if (userId) payload.userId = userId;
+    try {
+      await apiFetch("/customers", { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Cliente creado", "success");
+      document.getElementById("modal-create").classList.add("hidden");
+      loadCustomers();
+    } catch (err) { window.toast(err.message ?? "Error al crear cliente", "error"); }
+  });
+
+  // Detail panel close
+  document.getElementById("detail-close").addEventListener("click", () => {
+    document.getElementById("detail-panel").classList.add("hidden");
+  });
+  document.getElementById("detail-panel").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+
+  // Save edit
+  document.getElementById("btn-save-edit").addEventListener("click", async () => {
+    const id = document.getElementById("edit-id").value;
+    const payload = {};
+    const fn = document.getElementById("edit-fullname").value.trim();
+    if (fn) payload.fullName = fn;
+    const ph = document.getElementById("edit-phone").value.trim();
+    if (ph) payload.phone = ph;
+    const doc = document.getElementById("edit-document").value.trim();
+    if (doc) payload.document = doc;
+    const bd = document.getElementById("edit-birthdate").value;
+    if (bd) payload.birthdate = new Date(bd).toISOString();
+    try {
+      await apiFetch(`/customers/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      window.toast("Cliente actualizado", "success");
+      loadCustomers();
+    } catch (err) { window.toast(err.message ?? "Error al actualizar", "error"); }
+  });
+
+  // Loyalty
+  document.getElementById("btn-add-pts").addEventListener("click", async () => {
+    const pts = parseInt(document.getElementById("loyalty-pts-input").value);
+    if (!pts || pts < 1) { window.toast("Ingresa puntos válidos", "error"); return; }
+    try {
+      await apiFetch(`/customers/${activeCustomerId}/loyalty/add/${pts}`, { method: "POST" });
+      window.toast(`${pts} puntos agregados`, "success");
+      const updated = await apiFetch(`/customers/${activeCustomerId}`).catch(() => null);
+      if (updated) document.getElementById("detail-loyalty").textContent = String(updated.loyaltyPoints ?? 0) + " pts";
+    } catch (err) { window.toast(err.message ?? "Error", "error"); }
+  });
+
+  document.getElementById("btn-redeem-pts").addEventListener("click", async () => {
+    const pts = parseInt(document.getElementById("loyalty-pts-input").value);
+    if (!pts || pts < 1) { window.toast("Ingresa puntos válidos", "error"); return; }
+    try {
+      await apiFetch(`/customers/${activeCustomerId}/loyalty/redeem/${pts}`, { method: "POST" });
+      window.toast(`${pts} puntos canjeados`, "success");
+      const updated = await apiFetch(`/customers/${activeCustomerId}`).catch(() => null);
+      if (updated) document.getElementById("detail-loyalty").textContent = String(updated.loyaltyPoints ?? 0) + " pts";
+    } catch (err) { window.toast(err.message ?? "Error", "error"); }
+  });
+
+  // Membership add
+  document.getElementById("btn-add-membership").addEventListener("click", () => {
+    document.getElementById("modal-membership").classList.remove("hidden");
+  });
+  document.getElementById("membership-close").addEventListener("click", () => {
+    document.getElementById("modal-membership").classList.add("hidden");
+  });
+  document.getElementById("modal-membership").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("membership-submit").addEventListener("click", async () => {
+    const customerId = document.getElementById("mem-customer-id").value;
+    const plan = document.getElementById("mem-plan").value.trim();
+    const startsAt = document.getElementById("mem-starts").value;
+    const endsAt = document.getElementById("mem-ends").value;
+    const discountPct = parseInt(document.getElementById("mem-discount").value);
+    if (!plan || !startsAt || !endsAt || isNaN(discountPct)) {
+      window.toast("Todos los campos son obligatorios", "error"); return;
+    }
+    try {
+      await apiFetch("/memberships", {
+        method: "POST",
+        body: JSON.stringify({ customerId, plan, startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString(), discountPct }),
+      });
+      window.toast("Membresía creada", "success");
+      document.getElementById("modal-membership").classList.add("hidden");
+      loadMemberships(customerId);
+    } catch (err) { window.toast(err.message ?? "Error", "error"); }
+  });
+
+  loadCustomers();
+</script>

@@ -1,0 +1,168 @@
+---
+import "@/styles/global.css";
+import BaseHead from "@/components/fundations/head/BaseHead.astro";
+import Logo from "@/components/assets/Logo.astro";
+
+interface Props {
+  title?: string;
+  section?: string;
+}
+const { title = "Panel", section = "" } = Astro.props;
+---
+
+<html lang="es" class="scroll-smooth">
+  <head>
+    <BaseHead />
+    <title>{title} — Barbería</title>
+  </head>
+  <body class="flex bg-base-950 min-h-dvh">
+
+    <!-- Sidebar overlay (mobile) -->
+    <div id="sidebar-overlay" class="fixed inset-0 z-20 bg-black/60 hidden lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside
+      id="sidebar"
+      class="fixed inset-y-0 left-0 z-30 w-64 bg-base-900 border-r border-base-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200"
+    >
+      <!-- Logo -->
+      <div class="h-14 flex items-center px-5 border-b border-base-800 shrink-0">
+        <a href="/"><Logo class="text-accent-500" /></a>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5" id="sidebar-nav">
+        <!-- Items injected by JS based on role -->
+      </nav>
+
+      <!-- User info -->
+      <div class="border-t border-base-800 p-4 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="size-8 rounded-full bg-accent-800 flex items-center justify-center text-accent-300 text-sm font-semibold" id="user-avatar"></div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-base-100 truncate" id="sidebar-name"></p>
+            <p class="text-xs text-base-500 truncate" id="sidebar-role"></p>
+          </div>
+          <button id="logout-btn" title="Cerrar sesión" class="text-base-600 hover:text-accent-400 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+
+      <!-- Top bar -->
+      <header class="h-14 bg-base-950 border-b border-base-800 flex items-center px-4 gap-4 sticky top-0 z-10">
+        <button id="sidebar-toggle" class="lg:hidden text-base-500 hover:text-base-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <h1 class="text-sm font-semibold text-base-100 font-display">{title}</h1>
+        <div class="ml-auto flex items-center gap-3">
+          <span id="header-role-badge" class="hidden text-xs font-medium px-2.5 py-1 rounded-full bg-accent-900/50 text-accent-400 border border-accent-800/40"></span>
+        </div>
+      </header>
+
+      <!-- Page content -->
+      <main class="flex-1 p-4 sm:p-6">
+        <slot />
+      </main>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 z-50 hidden">
+      <div id="toast-inner" class="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border max-w-sm"></div>
+    </div>
+  </body>
+</html>
+
+<script define:vars={{ section }}>
+  import { getUser, clearSession, isAuthenticated } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  if (!isAuthenticated()) { window.location.href = "/login"; throw new Error("redirect"); }
+
+  const user = getUser()!;
+  const roles = user.roles.map((r) => r.toUpperCase());
+  const is = (r) => roles.includes(r);
+
+  // ── Populate sidebar user info ──────────────────────────────────────────────
+  document.getElementById("sidebar-name").textContent = user.fullName;
+  document.getElementById("user-avatar").textContent = user.fullName[0].toUpperCase();
+  document.getElementById("header-role-badge").textContent =
+    is("ADMIN") ? "Admin" : is("RECEPTIONIST") ? "Recepcionista" : is("BARBER") ? "Barbero" : "Cliente";
+  document.getElementById("header-role-badge").classList.remove("hidden");
+
+  const ROLE_LABEL = {
+    ADMIN: "Administrador", RECEPTIONIST: "Recepcionista",
+    BARBER: "Barbero", CUSTOMER: "Cliente",
+  };
+  document.getElementById("sidebar-role").textContent =
+    ROLE_LABEL[roles[0]] ?? roles[0] ?? "";
+
+  // ── Nav items config ─────────────────────────────────────────────────────────
+  const NAV = [
+    { href: "/dashboard/", label: "Inicio", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", key: "home", roles: ["ADMIN","RECEPTIONIST","BARBER","CUSTOMER"] },
+    { href: "/dashboard/appointments", label: "Citas", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", key: "appointments", roles: ["ADMIN","RECEPTIONIST","BARBER","CUSTOMER"] },
+    { href: "/dashboard/book", label: "Reservar Cita", icon: "M12 4v16m8-8H4", key: "book", roles: ["CUSTOMER"] },
+    { href: "/dashboard/customers", label: "Clientes", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z", key: "customers", roles: ["ADMIN","RECEPTIONIST"] },
+    { href: "/dashboard/barbers", label: "Barberos", icon: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z", key: "barbers", roles: ["ADMIN","RECEPTIONIST"] },
+    { href: "/dashboard/services", label: "Servicios", icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4", key: "services", roles: ["ADMIN","RECEPTIONIST"] },
+    { href: "/dashboard/inventory", label: "Inventario", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", key: "inventory", roles: ["ADMIN","RECEPTIONIST"] },
+    { href: "/dashboard/sales", label: "Ventas", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z", key: "sales", roles: ["ADMIN","RECEPTIONIST"] },
+    { href: "/dashboard/reports", label: "Reportes", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", key: "reports", roles: ["ADMIN"] },
+    { href: "/dashboard/users", label: "Usuarios", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z", key: "users", roles: ["ADMIN"] },
+  ];
+
+  const nav = document.getElementById("sidebar-nav");
+  NAV.filter((item) => item.roles.some((r) => roles.includes(r))).forEach((item) => {
+    const active = item.key === section;
+    const a = document.createElement("a");
+    a.href = item.href;
+    a.className = `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      active
+        ? "bg-accent-900/40 text-accent-400 border border-accent-800/40"
+        : "text-base-400 hover:text-base-100 hover:bg-base-800/60"
+    }`;
+    a.innerHTML = `<svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="${item.icon}"/></svg>${item.label}`;
+    nav.appendChild(a);
+  });
+
+  // ── Sidebar toggle (mobile) ──────────────────────────────────────────────────
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  document.getElementById("sidebar-toggle").addEventListener("click", () => {
+    sidebar.classList.toggle("-translate-x-full");
+    overlay.classList.toggle("hidden");
+  });
+  overlay.addEventListener("click", () => {
+    sidebar.classList.add("-translate-x-full");
+    overlay.classList.add("hidden");
+  });
+
+  // ── Logout ───────────────────────────────────────────────────────────────────
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    try { await apiFetch("/auth/logout", { method: "POST" }); } catch {}
+    clearSession();
+    window.location.href = "/login";
+  });
+
+  // ── Toast helper (window-level so pages can use it) ──────────────────────────
+  window.toast = (msg, type = "success") => {
+    const el = document.getElementById("toast");
+    const inner = document.getElementById("toast-inner");
+    inner.textContent = msg;
+    inner.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border max-w-sm ${
+      type === "error"
+        ? "bg-red-900/80 text-red-200 border-red-700/50"
+        : "bg-green-900/80 text-green-200 border-green-700/50"
+    }`;
+    el.classList.remove("hidden");
+    setTimeout(() => el.classList.add("hidden"), 3500);
+  };
+</script>

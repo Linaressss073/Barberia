@@ -1,0 +1,97 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Inicio" section="home">
+
+  <!-- Staff quick stats (shown by JS) -->
+  <div id="view-staff" class="hidden space-y-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500">Citas hoy</p>
+        <p id="s-total" class="mt-2 text-3xl font-semibold text-base-50 font-display">—</p>
+      </div>
+      <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500">Confirmadas</p>
+        <p id="s-confirmed" class="mt-2 text-3xl font-semibold text-accent-400 font-display">—</p>
+      </div>
+      <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500">Pendientes</p>
+        <p id="s-pending" class="mt-2 text-3xl font-semibold text-yellow-400 font-display">—</p>
+      </div>
+      <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500">Completadas</p>
+        <p id="s-completed" class="mt-2 text-3xl font-semibold text-green-400 font-display">—</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <a href="/dashboard/appointments" class="bg-base-900 border border-base-800 rounded-xl p-5 hover:border-accent-700/50 transition-colors group">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500 group-hover:text-accent-500 transition-colors">Citas de hoy</p>
+        <p id="s-today-label" class="mt-1 text-sm text-base-400">Ver todas las citas →</p>
+      </a>
+      <a href="/dashboard/customers" class="bg-base-900 border border-base-800 rounded-xl p-5 hover:border-accent-700/50 transition-colors group" id="link-customers">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500 group-hover:text-accent-500 transition-colors">Clientes</p>
+        <p id="s-customers-label" class="mt-1 text-sm text-base-400">Gestionar clientes →</p>
+      </a>
+      <a href="/dashboard/sales" class="bg-base-900 border border-base-800 rounded-xl p-5 hover:border-accent-700/50 transition-colors group" id="link-sales">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500 group-hover:text-accent-500 transition-colors">Ventas</p>
+        <p class="mt-1 text-sm text-base-400">Abrir caja →</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Customer view (shown by JS) -->
+  <div id="view-customer" class="hidden space-y-6">
+    <div class="bg-base-900 rounded-xl border border-base-800 p-6">
+      <p class="text-xs font-medium uppercase tracking-widest text-base-500">Puntos de lealtad</p>
+      <p id="loyalty-pts" class="mt-2 text-4xl font-semibold text-accent-400 font-display">—</p>
+      <p class="mt-1 text-sm text-base-500">Acumulados en todas tus visitas</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <a href="/dashboard/appointments" class="bg-base-900 border border-base-800 rounded-xl p-5 hover:border-accent-700/50 transition-colors group">
+        <p class="text-xs font-medium uppercase tracking-widest text-base-500 group-hover:text-accent-500 transition-colors">Mis citas</p>
+        <p class="mt-1 text-sm text-base-400">Ver próximas citas →</p>
+      </a>
+      <a href="/dashboard/book" class="bg-accent-900/30 border border-accent-800/40 rounded-xl p-5 hover:border-accent-600/50 transition-colors group">
+        <p class="text-xs font-medium uppercase tracking-widest text-accent-600 group-hover:text-accent-400 transition-colors">Reservar cita</p>
+        <p class="mt-1 text-sm text-accent-700">Elegir servicio y horario →</p>
+      </a>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser()!;
+  const roles = user.roles.map((r) => r.toUpperCase());
+  const isStaff = roles.some((r) => ["ADMIN","RECEPTIONIST","BARBER"].includes(r));
+
+  function show(id) { document.getElementById(id)?.classList.remove("hidden"); }
+
+  if (isStaff) {
+    show("view-staff");
+    const now = new Date();
+    const from = new Date(now); from.setHours(0,0,0,0);
+    const to = new Date(now); to.setHours(23,59,59,999);
+    apiFetch(`/appointments?from=${from.toISOString()}&to=${to.toISOString()}&limit=100&page=1`)
+      .then((data) => {
+        const apts = data.items ?? [];
+        document.getElementById("s-total").textContent = apts.length;
+        document.getElementById("s-confirmed").textContent = apts.filter(a => a.status === "CONFIRMED").length;
+        document.getElementById("s-pending").textContent = apts.filter(a => a.status === "BOOKED").length;
+        document.getElementById("s-completed").textContent = apts.filter(a => a.status === "COMPLETED").length;
+      })
+      .catch(() => {});
+  } else {
+    show("view-customer");
+    apiFetch("/customers/me")
+      .then((customer) => {
+        document.getElementById("loyalty-pts").textContent =
+          customer ? String(customer.loyaltyPoints) : "0";
+      })
+      .catch(() => { document.getElementById("loyalty-pts").textContent = "0"; });
+  }
+</script>

@@ -1,0 +1,424 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Inventario" section="inventory">
+
+  <div class="space-y-5">
+    <!-- Low stock alert banner -->
+    <div id="low-stock-banner" class="hidden bg-yellow-900/30 border border-yellow-700/40 rounded-xl p-4">
+      <div class="flex items-start gap-3">
+        <svg class="size-5 text-yellow-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div>
+          <p class="text-yellow-400 font-medium text-sm">Productos con stock bajo</p>
+          <p id="low-stock-list" class="text-yellow-500/80 text-xs mt-1"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div class="flex gap-2">
+        <input id="search-input" type="text" placeholder="Buscar producto…"
+          class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-48 sm:w-64" />
+        <button id="btn-search" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Buscar</button>
+      </div>
+      <button id="btn-open-create" class="px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">+ Nuevo Producto</button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-base-900 border border-base-800 rounded-xl overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-base-800/60">
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden sm:table-cell">SKU</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Nombre</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest">Stock</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden md:table-cell">Mín.</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden md:table-cell">Precio Venta</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-base-500 uppercase tracking-widest hidden lg:table-cell">Estado</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-base-500 uppercase tracking-widest">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="inventory-body" class="divide-y divide-base-800"></tbody>
+      </table>
+      <div id="inventory-empty" class="hidden p-12 text-center text-base-500 text-sm">No hay productos registrados.</div>
+      <div id="inventory-loading" class="p-8 text-center text-base-500 text-sm">Cargando inventario…</div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between">
+      <button id="btn-prev" disabled class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 disabled:opacity-40 disabled:cursor-not-allowed">← Anterior</button>
+      <span id="page-info" class="text-sm text-base-500">Página 1</span>
+      <button id="btn-next" disabled class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 disabled:opacity-40 disabled:cursor-not-allowed">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- Create product modal -->
+  <div id="modal-create" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Nuevo Producto</h3>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">SKU *</label>
+            <input id="p-sku" type="text" placeholder="Ej: PROD-001"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Nombre *</label>
+            <input id="p-name" type="text" placeholder="Nombre del producto"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Costo (COP) *</label>
+            <input id="p-cost" type="number" min="0" placeholder="10000"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Precio Venta (COP) *</label>
+            <input id="p-sale" type="number" min="0" placeholder="15000"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Stock inicial</label>
+            <input id="p-initial-stock" type="number" min="0" placeholder="0"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Stock mínimo</label>
+            <input id="p-min-stock" type="number" min="0" placeholder="5"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+        </div>
+        <p class="text-xs text-base-600">Los precios se ingresan en pesos colombianos (ej. 15000 = $15.000 COP)</p>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="create-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="create-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Crear Producto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit product modal -->
+  <div id="modal-edit" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Editar Producto</h3>
+      <input type="hidden" id="edit-id" />
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Nombre</label>
+          <input id="edit-name" type="text"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Costo (COP)</label>
+            <input id="edit-cost" type="number" min="0"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500">Precio Venta (COP)</label>
+            <input id="edit-sale" type="number" min="0"
+              class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          </div>
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Stock mínimo</label>
+          <input id="edit-min-stock" type="number" min="0"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div class="flex items-center gap-3">
+          <input id="edit-active" type="checkbox" class="rounded" />
+          <label class="text-sm text-base-300">Activo</label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="edit-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="edit-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock in modal -->
+  <div id="modal-stock-in" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Entrada de Stock</h3>
+      <input type="hidden" id="stock-in-id" />
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Cantidad *</label>
+          <input id="stock-in-qty" type="number" min="1" placeholder="1"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Motivo</label>
+          <input id="stock-in-reason" type="text" placeholder="Compra, devolución…"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="stock-in-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="stock-in-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-green-700 text-white hover:bg-green-600">Registrar Entrada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock out modal -->
+  <div id="modal-stock-out" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-5">Salida de Stock</h3>
+      <input type="hidden" id="stock-out-id" />
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Cantidad *</label>
+          <input id="stock-out-qty" type="number" min="1" placeholder="1"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Motivo</label>
+          <input id="stock-out-reason" type="text" placeholder="Uso, merma, venta…"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="stock-out-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="stock-out-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-orange-700 text-white hover:bg-orange-600">Registrar Salida</button>
+      </div>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser();
+  const roles = user.roles.map(r => r.toUpperCase());
+  if (!roles.some(r => ["ADMIN","RECEPTIONIST"].includes(r))) {
+    window.location.href = "/dashboard/";
+    throw new Error("redirect");
+  }
+
+  let page = 1;
+  let totalPages = 1;
+  let search = "";
+
+  function fmtCents(c) {
+    return (c / 100).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  }
+
+  function stockColorClass(stock, minStock) {
+    if (stock <= minStock) return "text-red-400 font-semibold";
+    if (stock <= minStock * 2) return "text-yellow-400 font-semibold";
+    return "text-green-400";
+  }
+
+  async function checkLowStock() {
+    try {
+      const items = await apiFetch("/inventory/products/low-stock");
+      const list = Array.isArray(items) ? items : (items.items ?? []);
+      if (list.length > 0) {
+        document.getElementById("low-stock-banner").classList.remove("hidden");
+        document.getElementById("low-stock-list").textContent =
+          list.map(p => `${p.name} (stock: ${p.stock})`).join(" · ");
+      }
+    } catch {}
+  }
+
+  async function loadInventory() {
+    const body = document.getElementById("inventory-body");
+    const empty = document.getElementById("inventory-empty");
+    const loading = document.getElementById("inventory-loading");
+    body.innerHTML = "";
+    empty.classList.add("hidden");
+    loading.classList.remove("hidden");
+    try {
+      const data = await apiFetch(`/inventory/products?page=${page}&limit=20&search=${encodeURIComponent(search)}`);
+      loading.classList.add("hidden");
+      const items = data.items ?? data ?? [];
+      const total = data.total ?? items.length;
+      totalPages = Math.max(1, Math.ceil(total / 20));
+      document.getElementById("page-info").textContent = `Página ${page} de ${totalPages}`;
+      document.getElementById("btn-prev").disabled = page <= 1;
+      document.getElementById("btn-next").disabled = page >= totalPages;
+      if (items.length === 0) { empty.classList.remove("hidden"); return; }
+
+      items.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-base-800/30 transition-colors";
+        const stockCls = stockColorClass(p.stock ?? 0, p.minStock ?? 0);
+        const activeBadge = (p.active !== false)
+          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-900/40 text-green-400 border border-green-800/40">Activo</span>`
+          : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-base-700/40 text-base-500 border border-base-700/40">Inactivo</span>`;
+        tr.innerHTML = `
+          <td class="px-4 py-3 text-xs text-base-500 font-mono hidden sm:table-cell">${p.sku}</td>
+          <td class="px-4 py-3 text-sm text-base-100 font-medium">${p.name}</td>
+          <td class="px-4 py-3 text-sm ${stockCls}">${p.stock ?? 0}</td>
+          <td class="px-4 py-3 text-sm text-base-500 hidden md:table-cell">${p.minStock ?? 0}</td>
+          <td class="px-4 py-3 text-sm text-accent-400 hidden md:table-cell">${fmtCents(p.salePriceCents)}</td>
+          <td class="px-4 py-3 hidden lg:table-cell">${activeBadge}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              <button class="btn-stock-in px-2.5 py-1 text-xs rounded-md bg-green-900/20 text-green-400 border border-green-800/30 hover:bg-green-900/40" data-id="${p.id}">+ Entrada</button>
+              <button class="btn-stock-out px-2.5 py-1 text-xs rounded-md bg-orange-900/20 text-orange-400 border border-orange-800/30 hover:bg-orange-900/40" data-id="${p.id}">− Salida</button>
+              <button class="btn-edit px-2.5 py-1 text-xs rounded-md bg-base-800 text-base-100 hover:bg-base-700 border border-base-700" data-id="${p.id}" data-name="${p.name}" data-cost="${Math.round(p.costCents/100)}" data-sale="${Math.round(p.salePriceCents/100)}" data-minstock="${p.minStock ?? 0}" data-active="${p.active !== false}">Editar</button>
+            </div>
+          </td>`;
+        body.appendChild(tr);
+      });
+
+      body.querySelectorAll(".btn-stock-in").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("stock-in-id").value = btn.dataset.id;
+          document.getElementById("stock-in-qty").value = "";
+          document.getElementById("stock-in-reason").value = "";
+          document.getElementById("modal-stock-in").classList.remove("hidden");
+        });
+      });
+      body.querySelectorAll(".btn-stock-out").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("stock-out-id").value = btn.dataset.id;
+          document.getElementById("stock-out-qty").value = "";
+          document.getElementById("stock-out-reason").value = "";
+          document.getElementById("modal-stock-out").classList.remove("hidden");
+        });
+      });
+      body.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.getElementById("edit-id").value = btn.dataset.id;
+          document.getElementById("edit-name").value = btn.dataset.name;
+          document.getElementById("edit-cost").value = btn.dataset.cost;
+          document.getElementById("edit-sale").value = btn.dataset.sale;
+          document.getElementById("edit-min-stock").value = btn.dataset.minstock;
+          document.getElementById("edit-active").checked = btn.dataset.active === "true";
+          document.getElementById("modal-edit").classList.remove("hidden");
+        });
+      });
+    } catch (err) {
+      loading.classList.add("hidden");
+      window.toast(err.message ?? "Error al cargar inventario", "error");
+    }
+  }
+
+  // Search & pagination
+  document.getElementById("btn-search").addEventListener("click", () => {
+    search = document.getElementById("search-input").value.trim(); page = 1; loadInventory();
+  });
+  document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { search = e.target.value.trim(); page = 1; loadInventory(); }
+  });
+  document.getElementById("btn-prev").addEventListener("click", () => { if (page > 1) { page--; loadInventory(); } });
+  document.getElementById("btn-next").addEventListener("click", () => { if (page < totalPages) { page++; loadInventory(); } });
+
+  // Create product
+  document.getElementById("btn-open-create").addEventListener("click", () => {
+    document.getElementById("modal-create").classList.remove("hidden");
+  });
+  document.getElementById("create-close").addEventListener("click", () => {
+    document.getElementById("modal-create").classList.add("hidden");
+  });
+  document.getElementById("modal-create").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("create-submit").addEventListener("click", async () => {
+    const sku = document.getElementById("p-sku").value.trim();
+    const name = document.getElementById("p-name").value.trim();
+    const costVal = parseInt(document.getElementById("p-cost").value);
+    const saleVal = parseInt(document.getElementById("p-sale").value);
+    if (!sku || !name || isNaN(costVal) || isNaN(saleVal)) {
+      window.toast("Completa todos los campos obligatorios", "error"); return;
+    }
+    const payload = { sku, name, costCents: costVal * 100, salePriceCents: saleVal * 100 };
+    const init = parseInt(document.getElementById("p-initial-stock").value);
+    const min = parseInt(document.getElementById("p-min-stock").value);
+    if (!isNaN(init)) payload.initialStock = init;
+    if (!isNaN(min)) payload.minStock = min;
+    try {
+      await apiFetch("/inventory/products", { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Producto creado", "success");
+      document.getElementById("modal-create").classList.add("hidden");
+      loadInventory(); checkLowStock();
+    } catch (err) { window.toast(err.message ?? "Error al crear producto", "error"); }
+  });
+
+  // Edit product
+  document.getElementById("edit-close").addEventListener("click", () => {
+    document.getElementById("modal-edit").classList.add("hidden");
+  });
+  document.getElementById("modal-edit").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("edit-submit").addEventListener("click", async () => {
+    const id = document.getElementById("edit-id").value;
+    const payload = {};
+    const name = document.getElementById("edit-name").value.trim();
+    if (name) payload.name = name;
+    const cost = parseInt(document.getElementById("edit-cost").value);
+    if (!isNaN(cost)) payload.costCents = cost * 100;
+    const sale = parseInt(document.getElementById("edit-sale").value);
+    if (!isNaN(sale)) payload.salePriceCents = sale * 100;
+    const min = parseInt(document.getElementById("edit-min-stock").value);
+    if (!isNaN(min)) payload.minStock = min;
+    payload.active = document.getElementById("edit-active").checked;
+    try {
+      await apiFetch(`/inventory/products/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      window.toast("Producto actualizado", "success");
+      document.getElementById("modal-edit").classList.add("hidden");
+      loadInventory();
+    } catch (err) { window.toast(err.message ?? "Error al actualizar", "error"); }
+  });
+
+  // Stock in
+  document.getElementById("stock-in-close").addEventListener("click", () => {
+    document.getElementById("modal-stock-in").classList.add("hidden");
+  });
+  document.getElementById("modal-stock-in").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("stock-in-submit").addEventListener("click", async () => {
+    const id = document.getElementById("stock-in-id").value;
+    const qty = parseInt(document.getElementById("stock-in-qty").value);
+    if (!qty || qty < 1) { window.toast("Ingresa una cantidad válida", "error"); return; }
+    const payload = { qty };
+    const reason = document.getElementById("stock-in-reason").value.trim();
+    if (reason) payload.reason = reason;
+    try {
+      await apiFetch(`/inventory/products/${id}/in`, { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Entrada registrada", "success");
+      document.getElementById("modal-stock-in").classList.add("hidden");
+      loadInventory(); checkLowStock();
+    } catch (err) { window.toast(err.message ?? "Error", "error"); }
+  });
+
+  // Stock out
+  document.getElementById("stock-out-close").addEventListener("click", () => {
+    document.getElementById("modal-stock-out").classList.add("hidden");
+  });
+  document.getElementById("modal-stock-out").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+  document.getElementById("stock-out-submit").addEventListener("click", async () => {
+    const id = document.getElementById("stock-out-id").value;
+    const qty = parseInt(document.getElementById("stock-out-qty").value);
+    if (!qty || qty < 1) { window.toast("Ingresa una cantidad válida", "error"); return; }
+    const payload = { qty };
+    const reason = document.getElementById("stock-out-reason").value.trim();
+    if (reason) payload.reason = reason;
+    try {
+      await apiFetch(`/inventory/products/${id}/out`, { method: "POST", body: JSON.stringify(payload) });
+      window.toast("Salida registrada", "success");
+      document.getElementById("modal-stock-out").classList.add("hidden");
+      loadInventory(); checkLowStock();
+    } catch (err) { window.toast(err.message ?? "Error", "error"); }
+  });
+
+  checkLowStock();
+  loadInventory();
+</script>

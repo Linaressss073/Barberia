@@ -1,0 +1,447 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Reservar Cita" section="book">
+
+  <div class="max-w-3xl mx-auto space-y-6">
+    <!-- Step indicator -->
+    <div class="flex items-center gap-2">
+      <div id="step-item-1" class="flex items-center gap-2">
+        <div class="size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-accent-500 bg-accent-500 text-base-950 step-circle" data-step="1">1</div>
+        <span class="text-sm font-medium text-accent-400 hidden sm:inline">Servicios</span>
+      </div>
+      <div class="flex-1 h-px bg-base-800 mx-1 step-line" id="line-1-2"></div>
+      <div id="step-item-2" class="flex items-center gap-2">
+        <div class="size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-base-700 bg-base-900 text-base-500 step-circle" data-step="2">2</div>
+        <span class="text-sm font-medium text-base-500 hidden sm:inline">Barbero</span>
+      </div>
+      <div class="flex-1 h-px bg-base-800 mx-1 step-line" id="line-2-3"></div>
+      <div id="step-item-3" class="flex items-center gap-2">
+        <div class="size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-base-700 bg-base-900 text-base-500 step-circle" data-step="3">3</div>
+        <span class="text-sm font-medium text-base-500 hidden sm:inline">Horario</span>
+      </div>
+      <div class="flex-1 h-px bg-base-800 mx-1 step-line" id="line-3-4"></div>
+      <div id="step-item-4" class="flex items-center gap-2">
+        <div class="size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-base-700 bg-base-900 text-base-500 step-circle" data-step="4">4</div>
+        <span class="text-sm font-medium text-base-500 hidden sm:inline">Confirmar</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Services -->
+    <div id="step-1" class="bg-base-900 border border-base-800 rounded-xl p-6 space-y-4">
+      <h2 class="text-base-100 font-semibold text-lg">Selecciona servicios</h2>
+      <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="p-8 text-center text-base-500 text-sm col-span-full">Cargando servicios…</div>
+      </div>
+      <div class="flex justify-end pt-2">
+        <button id="step1-next" disabled class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Barber -->
+    <div id="step-2" class="hidden bg-base-900 border border-base-800 rounded-xl p-6 space-y-4">
+      <h2 class="text-base-100 font-semibold text-lg">Selecciona barbero</h2>
+      <div id="barbers-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="p-8 text-center text-base-500 text-sm col-span-full">Cargando barberos…</div>
+      </div>
+      <div class="flex justify-between pt-2">
+        <button id="step2-back" class="px-5 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">← Atrás</button>
+        <button id="step2-next" disabled class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Date & Time -->
+    <div id="step-3" class="hidden bg-base-900 border border-base-800 rounded-xl p-6 space-y-4">
+      <h2 class="text-base-100 font-semibold text-lg">Selecciona fecha y hora</h2>
+      <div class="space-y-2">
+        <label class="text-xs uppercase tracking-widest text-base-500">Fecha</label>
+        <input id="apt-date" type="date"
+          class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+      </div>
+      <div id="slots-container" class="hidden space-y-2">
+        <label class="text-xs uppercase tracking-widest text-base-500">Horarios disponibles</label>
+        <div id="slots-grid" class="flex flex-wrap gap-2"></div>
+        <div id="slots-empty" class="hidden text-sm text-base-500">No hay horarios disponibles para esta fecha.</div>
+      </div>
+      <div class="flex justify-between pt-2">
+        <button id="step3-back" class="px-5 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">← Atrás</button>
+        <button id="step3-next" disabled class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Confirm -->
+    <div id="step-4" class="hidden bg-base-900 border border-base-800 rounded-xl p-6 space-y-5">
+      <h2 class="text-base-100 font-semibold text-lg">Confirmar reserva</h2>
+
+      <!-- Staff only: customer selection -->
+      <div id="customer-field-wrap" class="hidden space-y-2">
+        <label class="text-xs uppercase tracking-widest text-base-500">Cliente (ID o búsqueda)</label>
+        <div class="flex gap-2">
+          <input id="customer-search-input" type="text" placeholder="Buscar nombre o escribir ID…"
+            class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm flex-1" />
+          <button id="customer-search-btn" class="px-3 py-2 text-xs rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Buscar</button>
+        </div>
+        <div id="customer-search-results" class="hidden bg-base-800 border border-base-700 rounded-lg divide-y divide-base-700 max-h-48 overflow-y-auto"></div>
+        <input id="selected-customer-id" type="hidden" />
+        <p id="selected-customer-name" class="text-sm text-accent-400 hidden"></p>
+      </div>
+
+      <div class="space-y-3 bg-base-800/40 rounded-lg p-4 border border-base-700/50">
+        <div class="flex justify-between text-sm">
+          <span class="text-base-500">Servicios</span>
+          <span id="confirm-services" class="text-base-100 text-right max-w-xs"></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-base-500">Barbero</span>
+          <span id="confirm-barber" class="text-base-100"></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-base-500">Fecha y hora</span>
+          <span id="confirm-datetime" class="text-base-100"></span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-base-500">Duración estimada</span>
+          <span id="confirm-duration" class="text-base-100"></span>
+        </div>
+        <div class="border-t border-base-700 pt-3 flex justify-between text-sm font-semibold">
+          <span class="text-base-500">Total</span>
+          <span id="confirm-price" class="text-accent-400 text-base"></span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs uppercase tracking-widest text-base-500">Notas (opcional)</label>
+        <textarea id="apt-notes" rows="2" placeholder="Instrucciones especiales…"
+          class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full resize-none"></textarea>
+      </div>
+
+      <div class="flex justify-between pt-2">
+        <button id="step4-back" class="px-5 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">← Atrás</button>
+        <button id="btn-submit-book" class="px-6 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors">Reservar Cita</button>
+      </div>
+    </div>
+  </div>
+
+</DashboardLayout>
+
+<script>
+  import { getUser } from "@/lib/auth";
+  import { apiFetch } from "@/lib/api";
+
+  const user = getUser();
+  const roles = user.roles.map(r => r.toUpperCase());
+  const isStaff = roles.some(r => ["ADMIN","RECEPTIONIST","BARBER"].includes(r));
+  const isCustomer = roles.includes("CUSTOMER") && !isStaff;
+
+  let currentStep = 1;
+  const state = {
+    selectedServices: [],
+    selectedBarberId: null,
+    selectedBarberName: "",
+    selectedSlot: null,
+    selectedDate: null,
+    customerId: null,
+    customerName: "",
+    allServices: [],
+    allBarbers: [],
+  };
+
+  function fmtCents(c) {
+    return (c / 100).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  }
+
+  function goStep(n) {
+    document.getElementById(`step-${currentStep}`).classList.add("hidden");
+    currentStep = n;
+    document.getElementById(`step-${currentStep}`).classList.remove("hidden");
+    updateStepIndicator();
+  }
+
+  function updateStepIndicator() {
+    for (let i = 1; i <= 4; i++) {
+      const circle = document.querySelector(`.step-circle[data-step="${i}"]`);
+      const label = document.getElementById(`step-item-${i}`)?.querySelector("span");
+      if (i < currentStep) {
+        circle.className = "size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-green-500 bg-green-500 text-white step-circle";
+        circle.dataset.step = i;
+        if (label) label.className = "text-sm font-medium text-green-400 hidden sm:inline";
+      } else if (i === currentStep) {
+        circle.className = "size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-accent-500 bg-accent-500 text-base-950 step-circle";
+        circle.dataset.step = i;
+        if (label) label.className = "text-sm font-medium text-accent-400 hidden sm:inline";
+      } else {
+        circle.className = "size-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-base-700 bg-base-900 text-base-500 step-circle";
+        circle.dataset.step = i;
+        if (label) label.className = "text-sm font-medium text-base-500 hidden sm:inline";
+      }
+    }
+  }
+
+  // ── Step 1: Services ─────────────────────────────────────────────────────────
+  async function loadServices() {
+    const grid = document.getElementById("services-grid");
+    try {
+      const data = await apiFetch("/services?onlyActive=true&limit=50&page=1");
+      state.allServices = data.items ?? data ?? [];
+      grid.innerHTML = "";
+      if (state.allServices.length === 0) {
+        grid.innerHTML = '<div class="p-8 text-center text-base-500 text-sm col-span-full">No hay servicios disponibles.</div>';
+        return;
+      }
+      state.allServices.forEach(svc => {
+        const card = document.createElement("div");
+        card.dataset.id = svc.id;
+        card.className = "service-card cursor-pointer rounded-xl border-2 border-base-700 bg-base-800/40 p-4 hover:border-accent-600/50 transition-all select-none";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-base-100 font-medium text-sm">${svc.name}</p>
+              ${svc.description ? `<p class="text-base-500 text-xs mt-1 line-clamp-2">${svc.description}</p>` : ""}
+            </div>
+            <div class="size-5 rounded-full border-2 border-base-600 flex items-center justify-center check-icon shrink-0 ml-3 mt-0.5"></div>
+          </div>
+          <div class="flex gap-3 mt-3">
+            <span class="text-xs text-base-500">${svc.durationMin} min</span>
+            <span class="text-xs font-semibold text-accent-400">${fmtCents(svc.priceCents)}</span>
+          </div>`;
+        card.addEventListener("click", () => toggleService(svc, card));
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      grid.innerHTML = `<div class="p-8 text-center text-base-500 text-sm col-span-full">Error al cargar servicios.</div>`;
+    }
+  }
+
+  function toggleService(svc, card) {
+    const idx = state.selectedServices.findIndex(s => s.id === svc.id);
+    if (idx >= 0) {
+      state.selectedServices.splice(idx, 1);
+      card.classList.remove("border-accent-500", "bg-accent-900/20");
+      card.classList.add("border-base-700", "bg-base-800/40");
+      card.querySelector(".check-icon").innerHTML = "";
+      card.querySelector(".check-icon").className = "size-5 rounded-full border-2 border-base-600 flex items-center justify-center check-icon shrink-0 ml-3 mt-0.5";
+    } else {
+      state.selectedServices.push(svc);
+      card.classList.remove("border-base-700", "bg-base-800/40");
+      card.classList.add("border-accent-500", "bg-accent-900/20");
+      card.querySelector(".check-icon").className = "size-5 rounded-full border-2 border-accent-500 bg-accent-500 flex items-center justify-center check-icon shrink-0 ml-3 mt-0.5";
+      card.querySelector(".check-icon").innerHTML = `<svg class="size-3 text-base-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+    }
+    document.getElementById("step1-next").disabled = state.selectedServices.length === 0;
+  }
+
+  document.getElementById("step1-next").addEventListener("click", () => {
+    if (state.selectedServices.length > 0) { loadBarbers(); goStep(2); }
+  });
+
+  // ── Step 2: Barbers ──────────────────────────────────────────────────────────
+  async function loadBarbers() {
+    const grid = document.getElementById("barbers-grid");
+    grid.innerHTML = '<div class="p-8 text-center text-base-500 text-sm col-span-full">Cargando barberos…</div>';
+    try {
+      const data = await apiFetch("/barbers?onlyActive=true&limit=50&page=1");
+      state.allBarbers = data.items ?? data ?? [];
+      grid.innerHTML = "";
+      if (state.allBarbers.length === 0) {
+        grid.innerHTML = '<div class="p-8 text-center text-base-500 text-sm col-span-full">No hay barberos disponibles.</div>';
+        return;
+      }
+      state.allBarbers.forEach(barber => {
+        const card = document.createElement("div");
+        card.dataset.id = barber.id;
+        card.className = "barber-card cursor-pointer rounded-xl border-2 border-base-700 bg-base-800/40 p-4 hover:border-accent-600/50 transition-all select-none";
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="size-10 rounded-full bg-accent-900/50 flex items-center justify-center text-accent-400 font-semibold text-sm shrink-0">${barber.displayName[0].toUpperCase()}</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-base-100 font-medium text-sm">${barber.displayName}</p>
+              ${barber.specialty ? `<p class="text-base-500 text-xs">${barber.specialty}</p>` : ""}
+            </div>
+            <div class="size-5 rounded-full border-2 border-base-600 check-icon shrink-0"></div>
+          </div>`;
+        card.addEventListener("click", () => selectBarber(barber, card));
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      grid.innerHTML = `<div class="p-8 text-center text-base-500 text-sm col-span-full">Error al cargar barberos.</div>`;
+    }
+  }
+
+  function selectBarber(barber, card) {
+    document.querySelectorAll(".barber-card").forEach(c => {
+      c.classList.remove("border-accent-500", "bg-accent-900/20");
+      c.classList.add("border-base-700", "bg-base-800/40");
+      c.querySelector(".check-icon").className = "size-5 rounded-full border-2 border-base-600 check-icon shrink-0";
+      c.querySelector(".check-icon").innerHTML = "";
+    });
+    state.selectedBarberId = barber.id;
+    state.selectedBarberName = barber.displayName;
+    card.classList.remove("border-base-700", "bg-base-800/40");
+    card.classList.add("border-accent-500", "bg-accent-900/20");
+    card.querySelector(".check-icon").className = "size-5 rounded-full border-2 border-accent-500 bg-accent-500 flex items-center justify-center check-icon shrink-0";
+    card.querySelector(".check-icon").innerHTML = `<svg class="size-3 text-base-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+    document.getElementById("step2-next").disabled = false;
+  }
+
+  document.getElementById("step2-back").addEventListener("click", () => goStep(1));
+  document.getElementById("step2-next").addEventListener("click", () => {
+    if (state.selectedBarberId) goStep(3);
+  });
+
+  // ── Step 3: Date & Time ──────────────────────────────────────────────────────
+  const dateInput = document.getElementById("apt-date");
+  const today = new Date(); today.setHours(0,0,0,0);
+  dateInput.min = today.toISOString().split("T")[0];
+  dateInput.value = today.toISOString().split("T")[0];
+
+  dateInput.addEventListener("change", loadSlots);
+
+  async function loadSlots() {
+    const date = dateInput.value;
+    if (!date || !state.selectedBarberId) return;
+    const slotsContainer = document.getElementById("slots-container");
+    const slotsGrid = document.getElementById("slots-grid");
+    const slotsEmpty = document.getElementById("slots-empty");
+    slotsContainer.classList.remove("hidden");
+    slotsGrid.innerHTML = '<span class="text-base-500 text-sm">Buscando horarios…</span>';
+    slotsEmpty.classList.add("hidden");
+    state.selectedSlot = null;
+    document.getElementById("step3-next").disabled = true;
+
+    const totalDuration = state.selectedServices.reduce((s, sv) => s + sv.durationMin, 0);
+    try {
+      const slots = await apiFetch(`/appointments/availability?barberId=${state.selectedBarberId}&date=${date}T00:00:00.000Z&durationMin=${totalDuration}`);
+      slotsGrid.innerHTML = "";
+      const available = Array.isArray(slots) ? slots : (slots.slots ?? []);
+      if (available.length === 0) {
+        slotsEmpty.classList.remove("hidden");
+        return;
+      }
+      available.forEach(slot => {
+        const time = typeof slot === "string" ? slot : slot.time ?? slot.startTime ?? slot;
+        const btn = document.createElement("button");
+        btn.dataset.slot = time;
+        btn.className = "slot-btn px-3 py-1.5 text-sm rounded-lg border-2 border-base-700 bg-base-800/40 text-base-300 hover:border-accent-500 hover:text-accent-400 transition-all";
+        btn.textContent = new Date(time).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false });
+        btn.addEventListener("click", () => selectSlot(time, btn));
+        slotsGrid.appendChild(btn);
+      });
+    } catch (err) {
+      slotsGrid.innerHTML = `<span class="text-base-500 text-sm">Error al cargar horarios.</span>`;
+    }
+  }
+
+  function selectSlot(time, btn) {
+    document.querySelectorAll(".slot-btn").forEach(b => {
+      b.classList.remove("border-accent-500", "bg-accent-900/20", "text-accent-400");
+      b.classList.add("border-base-700", "bg-base-800/40", "text-base-300");
+    });
+    state.selectedSlot = time;
+    state.selectedDate = dateInput.value;
+    btn.classList.remove("border-base-700", "bg-base-800/40", "text-base-300");
+    btn.classList.add("border-accent-500", "bg-accent-900/20", "text-accent-400");
+    document.getElementById("step3-next").disabled = false;
+  }
+
+  document.getElementById("step3-back").addEventListener("click", () => goStep(2));
+  document.getElementById("step3-next").addEventListener("click", () => {
+    if (state.selectedSlot) { populateConfirm(); goStep(4); }
+  });
+
+  // ── Step 4: Confirm ──────────────────────────────────────────────────────────
+  function populateConfirm() {
+    document.getElementById("confirm-services").textContent = state.selectedServices.map(s => s.name).join(", ");
+    document.getElementById("confirm-barber").textContent = state.selectedBarberName;
+    const dt = new Date(state.selectedSlot);
+    document.getElementById("confirm-datetime").textContent = dt.toLocaleString("es-CO", {
+      weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const totalMin = state.selectedServices.reduce((s, sv) => s + sv.durationMin, 0);
+    document.getElementById("confirm-duration").textContent = `${totalMin} min`;
+    const totalCents = state.selectedServices.reduce((s, sv) => s + sv.priceCents, 0);
+    document.getElementById("confirm-price").textContent = fmtCents(totalCents);
+
+    if (isStaff) {
+      document.getElementById("customer-field-wrap").classList.remove("hidden");
+    }
+  }
+
+  // Customer search (staff only)
+  document.getElementById("customer-search-btn").addEventListener("click", async () => {
+    const q = document.getElementById("customer-search-input").value.trim();
+    if (!q) return;
+    const results = document.getElementById("customer-search-results");
+    results.innerHTML = '<p class="p-3 text-sm text-base-500">Buscando…</p>';
+    results.classList.remove("hidden");
+    try {
+      const data = await apiFetch(`/customers?search=${encodeURIComponent(q)}&limit=10&page=1`);
+      const items = data.items ?? data ?? [];
+      results.innerHTML = "";
+      if (items.length === 0) {
+        results.innerHTML = '<p class="p-3 text-sm text-base-500">Sin resultados.</p>';
+        return;
+      }
+      items.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "px-3 py-2 hover:bg-base-700 cursor-pointer";
+        div.innerHTML = `<p class="text-sm text-base-100">${c.fullName}</p><p class="text-xs text-base-500">${c.phone ?? ""} ${c.document ?? ""}</p>`;
+        div.addEventListener("click", () => {
+          document.getElementById("selected-customer-id").value = c.id;
+          document.getElementById("selected-customer-name").textContent = `Cliente: ${c.fullName}`;
+          document.getElementById("selected-customer-name").classList.remove("hidden");
+          results.classList.add("hidden");
+          document.getElementById("customer-search-input").value = c.fullName;
+        });
+        results.appendChild(div);
+      });
+    } catch {
+      results.innerHTML = '<p class="p-3 text-sm text-base-500">Error al buscar.</p>';
+    }
+  });
+
+  document.getElementById("step4-back").addEventListener("click", () => goStep(3));
+
+  document.getElementById("btn-submit-book").addEventListener("click", async () => {
+    let customerId = null;
+    if (isCustomer) {
+      try {
+        const me = await apiFetch("/customers/me");
+        customerId = me.id;
+      } catch {
+        window.toast("No se pudo obtener el perfil de cliente", "error");
+        return;
+      }
+    } else {
+      customerId = document.getElementById("selected-customer-id").value;
+      if (!customerId) {
+        window.toast("Selecciona un cliente para la cita", "error");
+        return;
+      }
+    }
+
+    const body = {
+      customerId,
+      barberId: state.selectedBarberId,
+      scheduledAt: new Date(state.selectedSlot).toISOString(),
+      serviceIds: state.selectedServices.map(s => s.id),
+    };
+    const notes = document.getElementById("apt-notes").value.trim();
+    if (notes) body.notes = notes;
+
+    const btn = document.getElementById("btn-submit-book");
+    btn.disabled = true;
+    btn.textContent = "Reservando…";
+    try {
+      await apiFetch("/appointments", { method: "POST", body: JSON.stringify(body) });
+      window.toast("Cita reservada correctamente", "success");
+      setTimeout(() => { window.location.href = "/dashboard/appointments"; }, 1200);
+    } catch (err) {
+      window.toast(err.message ?? "Error al reservar cita", "error");
+      btn.disabled = false;
+      btn.textContent = "Reservar Cita";
+    }
+  });
+
+  loadServices();
+  updateStepIndicator();
+</script>

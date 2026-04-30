@@ -9,22 +9,22 @@ import Logo from "@/components/assets/Logo.astro";
     <BaseHead />
     <title>Panel — Barbería</title>
   </head>
-  <body class="flex flex-col bg-base-50 min-h-dvh">
+  <body class="flex flex-col bg-base-950 min-h-dvh">
     <!-- Top nav -->
-    <header class="bg-white border-b border-base-200 sticky top-0 z-10">
+    <header class="bg-base-950 border-b border-base-800 sticky top-0 z-10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-14">
-          <a href="/"><Logo class="text-base-900" /></a>
+          <a href="/"><Logo class="text-accent-500" /></a>
           <div class="flex items-center gap-4">
             <span
               id="user-role-badge"
-              class="hidden text-xs font-medium px-2.5 py-1 rounded-full bg-accent-100 text-accent-800"
+              class="hidden text-xs font-medium px-2.5 py-1 rounded-full bg-accent-900/50 text-accent-400 border border-accent-800/40"
             ></span>
-            <span id="user-name" class="text-sm font-medium text-base-700"
+            <span id="user-name" class="text-sm font-medium text-base-300"
             ></span>
             <button
               id="logout-btn"
-              class="text-sm font-medium text-base-500 hover:text-accent-700 transition-colors"
+              class="text-sm font-medium text-base-500 hover:text-accent-400 transition-colors"
             >
               Cerrar sesión
             </button>
@@ -38,7 +38,7 @@ import Logo from "@/components/assets/Logo.astro";
       id="app-loading"
       class="flex-1 flex items-center justify-center"
     >
-      <div class="flex flex-col items-center gap-3 text-base-400">
+      <div class="flex flex-col items-center gap-3 text-base-500">
         <svg class="animate-spin size-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -52,50 +52,50 @@ import Logo from "@/components/assets/Logo.astro";
 
       <!-- Welcome -->
       <div class="mb-8">
-        <h1 class="text-2xl font-semibold text-base-900">
-          Bienvenido, <span id="welcome-name"></span>
+        <h1 class="text-2xl font-semibold text-base-50 font-display">
+          Bienvenido, <span id="welcome-name" class="text-accent-400"></span>
         </h1>
         <p id="today-date" class="mt-1 text-sm text-base-500"></p>
       </div>
 
       <!-- Stats cards -->
       <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-xl border border-base-200 p-5">
-          <p class="text-xs font-medium uppercase text-base-400">Citas hoy</p>
-          <p id="stat-total" class="mt-2 text-3xl font-semibold text-base-900">—</p>
+        <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+          <p class="text-xs font-medium uppercase tracking-widest text-base-500">Citas hoy</p>
+          <p id="stat-total" class="mt-2 text-3xl font-semibold text-base-50 font-display">—</p>
         </div>
-        <div class="bg-white rounded-xl border border-base-200 p-5">
-          <p class="text-xs font-medium uppercase text-base-400">Confirmadas</p>
-          <p id="stat-confirmed" class="mt-2 text-3xl font-semibold text-accent-700">—</p>
+        <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+          <p class="text-xs font-medium uppercase tracking-widest text-base-500">Confirmadas</p>
+          <p id="stat-confirmed" class="mt-2 text-3xl font-semibold text-accent-400 font-display">—</p>
         </div>
-        <div class="bg-white rounded-xl border border-base-200 p-5">
-          <p class="text-xs font-medium uppercase text-base-400">Pendientes</p>
-          <p id="stat-pending" class="mt-2 text-3xl font-semibold text-yellow-600">—</p>
+        <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+          <p class="text-xs font-medium uppercase tracking-widest text-base-500">Pendientes</p>
+          <p id="stat-pending" class="mt-2 text-3xl font-semibold text-yellow-500 font-display">—</p>
         </div>
-        <div class="bg-white rounded-xl border border-base-200 p-5">
-          <p class="text-xs font-medium uppercase text-base-400">Completadas</p>
-          <p id="stat-completed" class="mt-2 text-3xl font-semibold text-green-600">—</p>
+        <div class="bg-base-900 rounded-xl border border-base-800 p-5">
+          <p class="text-xs font-medium uppercase tracking-widest text-base-500">Completadas</p>
+          <p id="stat-completed" class="mt-2 text-3xl font-semibold text-green-500 font-display">—</p>
         </div>
       </div>
 
       <!-- Appointments table -->
-      <div class="bg-white rounded-xl border border-base-200 overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-base-100">
-          <h2 class="text-base font-semibold text-base-900">Citas de hoy</h2>
+      <div class="bg-base-900 rounded-xl border border-base-800 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-base-800">
+          <h2 class="text-base font-semibold text-base-100 font-display">Citas de hoy</h2>
           <span id="appointments-date" class="text-sm text-base-500"></span>
         </div>
 
         <!-- Loading skeleton -->
         <div id="table-loading" class="p-6 space-y-3">
           {[1, 2, 3].map(() => (
-            <div class="h-10 bg-base-100 rounded-lg animate-pulse"></div>
+            <div class="h-10 bg-base-800 rounded-lg animate-pulse"></div>
           ))}
         </div>
 
         <!-- Table -->
         <div id="table-wrapper" class="hidden overflow-x-auto">
           <table class="w-full text-sm text-left">
-            <thead class="bg-base-50 text-xs font-medium text-base-500 uppercase">
+            <thead class="bg-base-800/60 text-xs font-medium text-base-500 uppercase tracking-widest">
               <tr>
                 <th class="px-6 py-3">Hora</th>
                 <th class="px-6 py-3">Estado</th>
@@ -104,19 +104,19 @@ import Logo from "@/components/assets/Logo.astro";
                 <th class="px-6 py-3">Notas</th>
               </tr>
             </thead>
-            <tbody id="appointments-tbody" class="divide-y divide-base-100 text-base-700">
+            <tbody id="appointments-tbody" class="divide-y divide-base-800 text-base-300">
             </tbody>
           </table>
         </div>
 
         <!-- Empty state -->
         <div id="table-empty" class="hidden p-12 text-center">
-          <p class="text-base-400 text-sm">No hay citas programadas para hoy.</p>
+          <p class="text-base-500 text-sm">No hay citas programadas para hoy.</p>
         </div>
 
         <!-- Error state -->
         <div id="table-error" class="hidden p-6">
-          <p class="text-red-500 text-sm" id="table-error-text"></p>
+          <p class="text-red-400 text-sm" id="table-error-text"></p>
         </div>
       </div>
     </main>
@@ -127,7 +127,6 @@ import Logo from "@/components/assets/Logo.astro";
   import { isAuthenticated, getUser, clearSession } from "@/lib/auth";
   import { apiFetch } from "@/lib/api";
 
-  // ── Auth guard ──────────────────────────────────────────────────────────────
   if (!isAuthenticated()) {
     window.location.href = "/login";
     throw new Error("redirect");
@@ -135,7 +134,6 @@ import Logo from "@/components/assets/Logo.astro";
 
   const user = getUser()!;
 
-  // ── UI helpers ──────────────────────────────────────────────────────────────
   function el<T extends HTMLElement>(id: string): T {
     return document.getElementById(id) as T;
   }
@@ -152,14 +150,13 @@ import Logo from "@/components/assets/Logo.astro";
   };
 
   const STATUS_CLASS: Record<string, string> = {
-    BOOKED: "bg-yellow-50 text-yellow-700",
-    CONFIRMED: "bg-blue-50 text-blue-700",
-    COMPLETED: "bg-green-50 text-green-700",
-    CANCELLED: "bg-base-100 text-base-500",
-    NO_SHOW: "bg-red-50 text-red-600",
+    BOOKED: "bg-yellow-900/40 text-yellow-400 border border-yellow-800/40",
+    CONFIRMED: "bg-blue-900/40 text-blue-400 border border-blue-800/40",
+    COMPLETED: "bg-green-900/40 text-green-400 border border-green-800/40",
+    CANCELLED: "bg-base-800 text-base-500 border border-base-700",
+    NO_SHOW: "bg-red-900/40 text-red-400 border border-red-800/40",
   };
 
-  // ── Populate static UI ──────────────────────────────────────────────────────
   el("user-name").textContent = user.fullName;
   el("welcome-name").textContent = user.fullName.split(" ")[0];
 
@@ -189,22 +186,19 @@ import Logo from "@/components/assets/Logo.astro";
     year: "numeric",
   });
 
-  // ── Show app content ─────────────────────────────────────────────────────────
   hide("app-loading");
   show("app-content");
 
-  // ── Logout ───────────────────────────────────────────────────────────────────
   el("logout-btn").addEventListener("click", async () => {
     try {
       await apiFetch("/auth/logout", { method: "POST" });
     } catch {
-      // ignore; clear locally regardless
+      // ignore
     }
     clearSession();
     window.location.href = "/login";
   });
 
-  // ── Fetch today's appointments ────────────────────────────────────────────────
   (async () => {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
@@ -230,7 +224,6 @@ import Logo from "@/components/assets/Logo.astro";
 
       const appointments = data.items;
 
-      // Stats
       el("stat-total").textContent = String(appointments.length);
       el("stat-confirmed").textContent = String(
         appointments.filter((a) => a.status === "CONFIRMED").length
@@ -249,7 +242,6 @@ import Logo from "@/components/assets/Logo.astro";
         return;
       }
 
-      // Build table rows
       const tbody = el<HTMLTableSectionElement>("appointments-tbody");
       appointments.forEach((appt) => {
         const time = new Date(appt.scheduledAt).toLocaleTimeString("es-CO", {
@@ -262,13 +254,13 @@ import Logo from "@/components/assets/Logo.astro";
         });
         const statusLabel = STATUS_LABEL[appt.status] ?? appt.status;
         const statusClass =
-          STATUS_CLASS[appt.status] ?? "bg-base-100 text-base-500";
+          STATUS_CLASS[appt.status] ?? "bg-base-800 text-base-500";
         const totalMin = appt.items.reduce((s, i) => s + i.durationMin, 0);
 
         const tr = document.createElement("tr");
-        tr.className = "hover:bg-base-50 transition-colors";
+        tr.className = "hover:bg-base-800/40 transition-colors";
         tr.innerHTML = `
-          <td class="px-6 py-3 font-medium text-base-900 whitespace-nowrap">
+          <td class="px-6 py-3 font-medium text-base-100 whitespace-nowrap">
             ${time} – ${endTime}
           </td>
           <td class="px-6 py-3">
@@ -276,11 +268,11 @@ import Logo from "@/components/assets/Logo.astro";
               ${statusLabel}
             </span>
           </td>
-          <td class="px-6 py-3 text-base-500">
+          <td class="px-6 py-3 text-base-400">
             ${appt.items.length} servicio${appt.items.length !== 1 ? "s" : ""} · ${totalMin} min
           </td>
-          <td class="px-6 py-3 text-base-500 capitalize">${appt.source.toLowerCase()}</td>
-          <td class="px-6 py-3 text-base-500 max-w-xs truncate">${appt.notes ?? "—"}</td>
+          <td class="px-6 py-3 text-base-400 capitalize">${appt.source.toLowerCase()}</td>
+          <td class="px-6 py-3 text-base-400 max-w-xs truncate">${appt.notes ?? "—"}</td>
         `;
         tbody.appendChild(tr);
       });

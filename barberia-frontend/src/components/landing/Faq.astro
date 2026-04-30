@@ -57,28 +57,28 @@ const faqs = [
 ];
 ---
 
-<section id="faq">
+<section id="faq" class="bg-base-950">
   <Wrapper variant="standard" class="py-20">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
       <div>
         <Text
           tag="span"
           variant="textSM"
-          class="leading-normal font-bold uppercase text-accent-700"
+          class="leading-normal font-medium uppercase tracking-widest text-accent-500"
         >
           FAQ
         </Text>
         <Text
           tag="h2"
           variant="displayMD"
-          class="tracking-tight mt-4 font-semibold text-base-900"
+          class="tracking-tight mt-4 font-semibold text-base-50 font-display"
         >
           Preguntas frecuentes
         </Text>
         <Text
           tag="p"
           variant="textBase"
-          class="mt-4 text-base-500 font-medium text-balance"
+          class="mt-4 text-base-400 font-medium text-balance"
         >
           Todo lo que necesitas saber sobre el sistema de gestión para barberías.
         </Text>
@@ -86,17 +86,17 @@ const faqs = [
       <div class="lg:col-span-2">
         {
           faqs.map((faq) => (
-            <details class="group pb-4">
-              <summary class="cursor-pointer flex items-center justify-between w-full text-left font-medium select-none text-base-600 hover:text-accent-800">
+            <details class="group border-b border-base-800 pb-4 mb-1">
+              <summary class="cursor-pointer flex items-center justify-between w-full text-left font-medium select-none text-base-300 hover:text-accent-400 transition-colors py-3">
                 <Text tag="h3" variant="textLG">
                   {faq.question}
                 </Text>
-                <Plus class="size-5 duration-300 ease-out text-base-500 group-open:rotate-45" />
+                <Plus class="size-5 duration-300 ease-out text-accent-600 group-open:rotate-45 shrink-0 ml-4" />
               </summary>
               <Text
                 tag="p"
                 variant="textBase"
-                class="pb-4 pt-2 text-base-500 text-balance"
+                class="pb-4 pt-2 text-base-400 text-balance"
               >
                 {faq.answer}
               </Text>

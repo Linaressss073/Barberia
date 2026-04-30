@@ -2,31 +2,31 @@
 @plugin "@tailwindcss/typography";
 @plugin "@tailwindcss/forms";
 @theme {
-  --font-sans: "Barlow", sans-serif;
-  --font-display: "Barlow Condensed", sans-serif;
+  --font-sans: "DM Sans", sans-serif;
+  --font-display: "Playfair Display", serif;
 
-  /* Accent — Rojo Carmesí Barbería */
-  --color-accent-50:  oklch(0.977 0.012 17);
-  --color-accent-100: oklch(0.944 0.030 17);
-  --color-accent-200: oklch(0.880 0.067 21);
-  --color-accent-300: oklch(0.790 0.127 24);
-  --color-accent-400: oklch(0.672 0.183 25);
-  --color-accent-500: oklch(0.558 0.220 25);
-  --color-accent-600: oklch(0.475 0.213 23);
-  --color-accent-700: oklch(0.402 0.192 21);
-  --color-accent-800: oklch(0.323 0.155 19);
-  --color-accent-900: oklch(0.247 0.112 16);
-  --color-accent-950: oklch(0.177 0.075 14);
-  /* Base — Grafito Oscuro */
-  --color-base-50:  oklch(0.985 0.003 65);
-  --color-base-100: oklch(0.957 0.006 65);
-  --color-base-200: oklch(0.908 0.010 65);
-  --color-base-300: oklch(0.827 0.015 65);
-  --color-base-400: oklch(0.682 0.019 65);
-  --color-base-500: oklch(0.512 0.018 65);
-  --color-base-600: oklch(0.400 0.016 65);
-  --color-base-700: oklch(0.310 0.013 65);
-  --color-base-800: oklch(0.225 0.010 65);
-  --color-base-900: oklch(0.163 0.008 65);
-  --color-base-950: oklch(0.107 0.006 65);
+  /* Accent — Dorado Antiguo (Old School Gold) */
+  --color-accent-50:  oklch(0.982 0.013 85);
+  --color-accent-100: oklch(0.958 0.028 82);
+  --color-accent-200: oklch(0.915 0.058 79);
+  --color-accent-300: oklch(0.858 0.092 76);
+  --color-accent-400: oklch(0.796 0.125 73);
+  --color-accent-500: oklch(0.730 0.148 71);
+  --color-accent-600: oklch(0.650 0.138 69);
+  --color-accent-700: oklch(0.562 0.120 67);
+  --color-accent-800: oklch(0.450 0.095 64);
+  --color-accent-900: oklch(0.340 0.070 60);
+  --color-accent-950: oklch(0.238 0.048 56);
+  /* Base — Negro Cálido + Crema */
+  --color-base-50:  oklch(0.978 0.012 80);
+  --color-base-100: oklch(0.950 0.020 80);
+  --color-base-200: oklch(0.895 0.028 78);
+  --color-base-300: oklch(0.820 0.025 75);
+  --color-base-400: oklch(0.670 0.022 70);
+  --color-base-500: oklch(0.498 0.018 65);
+  --color-base-600: oklch(0.385 0.016 60);
+  --color-base-700: oklch(0.288 0.014 55);
+  --color-base-800: oklch(0.202 0.012 50);
+  --color-base-900: oklch(0.148 0.010 45);
+  --color-base-950: oklch(0.100 0.008 40);
 }

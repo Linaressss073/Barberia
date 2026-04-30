@@ -28,25 +28,25 @@ const sections = [
 ];
 ---
 
-<section>
+<section class="bg-base-950">
   <Wrapper variant="standard" class="py-20">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
       <div class="lg:order-last">
         <Text
           tag="span"
           variant="textSM"
-          class="leading-normal font-bold uppercase text-accent-700"
+          class="leading-normal font-medium uppercase tracking-widest text-accent-500"
         >
           Más beneficios
         </Text>
         <Text
           tag="h2"
           variant="displayMD"
-          class="tracking-tight mt-4 font-semibold text-base-900"
+          class="tracking-tight mt-4 font-semibold text-base-50 font-display"
         >
           Diseñado para el día a día de la barbería
         </Text>
-        <Text tag="p" variant="textBase" class="mt-4 text-base-500 font-medium">
+        <Text tag="p" variant="textBase" class="mt-4 text-base-400 font-medium">
           Simplifica la operación y enfócate en lo que mejor sabes hacer.
         </Text>
         <div class="flex flex-wrap items-center gap-2 mx-auto mt-12">
@@ -72,7 +72,7 @@ const sections = [
           width={900}
           height={700}
           src={DashboardLight}
-          class="object-cover h-full ring-4 ring-base-50 border border-base-200 rounded-2xl"
+          class="object-cover h-full ring-1 ring-accent-800/50 border border-base-800 rounded-2xl opacity-90"
         />
       </div>
     </div>
@@ -81,24 +81,24 @@ const sections = [
     >
       {
         sections.map((section) => (
-          <div>
+          <div class="p-6 rounded-xl bg-base-900 border border-base-800">
             <div>
-              <Text tag="h3" variant="textLG" class="text-base-900 font-medium">
+              <Text tag="h3" variant="textLG" class="text-base-100 font-medium font-display">
                 {section.title}
               </Text>
-              <Text tag="p" variant="textBase" class="mt-2 text-base-500">
+              <Text tag="p" variant="textBase" class="mt-2 text-base-400">
                 {section.description}
               </Text>
             </div>
             <ul
               role="list"
-              class="space-y-1 mt-6 text-base font-medium text-base-900"
+              class="space-y-1 mt-6 text-base font-medium text-base-100"
             >
               {section.features.map((feature) => (
                 <li>
                   <div class="flex items-center gap-4">
-                    <Check class="size-5 text-accent-600" />
-                    <Text tag="p" variant="textSM" class="text-base-500">
+                    <Check class="size-5 text-accent-500 shrink-0" />
+                    <Text tag="p" variant="textSM" class="text-base-400">
                       {feature}
                     </Text>
                   </div>

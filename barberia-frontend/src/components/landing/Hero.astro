@@ -6,24 +6,24 @@ import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 ---
 
-<section class="overflow-hidden">
+<section class="overflow-hidden bg-base-950">
   <Wrapper class="pt-32">
     <div class="max-w-2xl text-center mx-auto lg:text-balance">
       <Text
         tag="span"
         variant="textSM"
-        class="leading-normal font-bold uppercase text-accent-700"
+        class="leading-normal font-medium uppercase tracking-widest text-accent-500 letter-spacing-widest"
       >
         Sistema de Gestión
       </Text>
       <Text
         tag="h1"
         variant="displayMD"
-        class="tracking-tight mt-4 font-semibold text-base-900"
+        class="tracking-tight mt-4 font-semibold text-base-50 font-display"
       >
         Tu Barbería, Siempre Organizada
       </Text>
-      <Text tag="p" variant="textBase" class="mt-4 text-base-500 font-medium text-balance">
+      <Text tag="p" variant="textBase" class="mt-4 text-base-400 font-medium text-balance">
         Agenda citas, gestiona clientes, controla inventario y monitorea ventas
         desde un solo lugar. Sin complicaciones.
       </Text>
@@ -46,12 +46,13 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     </div>
 
     <div class="relative w-full mx-auto max-w-7xl items-center py-12 pb-12">
+      <div class="absolute inset-0 bg-accent-500/5 rounded-2xl blur-3xl scale-95"></div>
       <Image
         alt="Panel de gestión de barbería"
         width={900}
         height={700}
         src={DashboardLight}
-        class="relative w-full ring-4 ring-base-50 border border-base-200 lg:rounded-2xl object-cover rounded"
+        class="relative w-full ring-1 ring-accent-800/50 border border-base-800 lg:rounded-2xl object-cover rounded opacity-90"
       />
     </div>
   </Wrapper>

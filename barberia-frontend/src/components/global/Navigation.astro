@@ -12,18 +12,18 @@ const navItems = [
 ];
 ---
 
-<section class="bg-white">
+<section class="bg-base-950 border-b border-base-800">
   <Wrapper variant="standard">
     <div
-      class="relative flex flex-col w-full py-2 bg-white md:items-center md:justify-between md:flex-row"
+      class="relative flex flex-col w-full py-2 bg-base-950 md:items-center md:justify-between md:flex-row"
     >
       <div class="flex flex-row items-center justify-between lg:justify-start">
         <a href="/">
-          <Logo class="text-base-900" />
+          <Logo class="text-accent-500" />
         </a>
         <button
           id="nav-toggle"
-          class="inline-flex items-center justify-center p-2 text-base-400 hover:text-black focus:outline-none focus:text-black md:hidden"
+          class="inline-flex items-center justify-center p-2 text-base-400 hover:text-accent-400 focus:outline-none md:hidden"
           type="button"
           aria-expanded="false"
         >
@@ -39,7 +39,7 @@ const navItems = [
           {
             navItems.map((item) => (
               <a
-                class="text-sm font-medium text-base-600 hover:text-accent-700"
+                class="text-sm font-medium text-base-400 hover:text-accent-400 transition-colors duration-200"
                 href={item.href}
               >
                 {item.text}

@@ -6,35 +6,35 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 ---
 
 <BaseLayout>
-  <section>
+  <section class="bg-base-950 min-h-[calc(100dvh-4rem)] flex items-center">
     <Wrapper variant="standard" class="py-20">
       <div class="max-w-sm mx-auto">
         <Text
           tag="h1"
           variant="displaySM"
-          class="tracking-tight font-semibold text-base-900"
+          class="tracking-tight font-semibold text-base-50 font-display"
         >
           Crear cuenta
         </Text>
         <Text
           tag="p"
           variant="textBase"
-          class="mt-4 text-base-500 font-medium text-balance"
+          class="mt-4 text-base-400 font-medium text-balance"
         >
           Únete y comienza a reservar citas en tu barbería favorita.
         </Text>
 
         <div
           id="form-error"
-          class="hidden mt-6 p-3 rounded-lg bg-red-50 border border-red-200"
+          class="hidden mt-6 p-3 rounded-lg bg-red-900/40 border border-red-700/50"
         >
-          <p class="text-sm text-red-600" id="form-error-text"></p>
+          <p class="text-sm text-red-400" id="form-error-text"></p>
         </div>
 
         <form id="signup-form" class="mx-auto mt-8" novalidate>
           <div class="flex flex-col gap-y-6">
             <div>
-              <label for="full-name" class="text-sm text-base-500 font-medium">
+              <label for="full-name" class="text-sm text-base-400 font-medium">
                 Nombre completo
               </label>
               <div class="mt-2.5">
@@ -47,12 +47,12 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
                   aria-required="true"
                   minlength="2"
                   maxlength="120"
-                  class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
+                  class="block w-full h-10 px-4 py-2 text-sm text-base-100 duration-300 bg-base-900 border border-transparent rounded-lg appearance-none ring-1 ring-base-700 placeholder-base-600 focus:border-transparent focus:outline-none focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-base-950 focus:ring-2 sm:text-sm"
                 />
               </div>
             </div>
             <div>
-              <label for="email" class="text-sm text-base-500 font-medium">
+              <label for="email" class="text-sm text-base-400 font-medium">
                 Correo electrónico
               </label>
               <div class="mt-2.5">
@@ -63,12 +63,12 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
                   autocomplete="email"
                   required
                   aria-required="true"
-                  class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
+                  class="block w-full h-10 px-4 py-2 text-sm text-base-100 duration-300 bg-base-900 border border-transparent rounded-lg appearance-none ring-1 ring-base-700 placeholder-base-600 focus:border-transparent focus:outline-none focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-base-950 focus:ring-2 sm:text-sm"
                 />
               </div>
             </div>
             <div>
-              <label for="password" class="text-sm text-base-500 font-medium">
+              <label for="password" class="text-sm text-base-400 font-medium">
                 Contraseña
               </label>
               <div class="mt-2.5">
@@ -81,9 +81,9 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
                   aria-required="true"
                   minlength="8"
                   maxlength="128"
-                  class="block w-full h-10 px-4 py-2 text-sm text-accent-700 duration-300 bg-white border border-transparent rounded-lg appearance-none ring-1 ring-base-200 placeholder-base-400 focus:border-base-300 focus:bg-transparent focus:outline-none focus:ring-accent-700 focus:ring-offset-2 focus:ring-2 sm:text-sm"
+                  class="block w-full h-10 px-4 py-2 text-sm text-base-100 duration-300 bg-base-900 border border-transparent rounded-lg appearance-none ring-1 ring-base-700 placeholder-base-600 focus:border-transparent focus:outline-none focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-base-950 focus:ring-2 sm:text-sm"
                 />
-                <p class="mt-1 text-xs text-base-400">Mínimo 8 caracteres</p>
+                <p class="mt-1 text-xs text-base-500">Mínimo 8 caracteres</p>
               </div>
             </div>
           </div>
@@ -93,15 +93,15 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
               name="agreement"
               type="checkbox"
               required
-              class="size-4 rounded border-base-300 text-accent-600 focus:ring-accent-600 shadow"
+              class="size-4 rounded border-base-600 bg-base-800 text-accent-500 focus:ring-accent-500 shadow"
             />
-            <label class="block text-sm text-base-500" for="agreement">
+            <label class="block text-sm text-base-400" for="agreement">
               Acepto los
-              <a class="text-accent-700 hover:text-base-500" href="/terms">
+              <a class="text-accent-400 hover:text-accent-300" href="/terms">
                 Términos de uso
               </a>
               y la
-              <a class="text-accent-700 hover:text-base-500" href="/terms">
+              <a class="text-accent-400 hover:text-accent-300" href="/terms">
                 Política de privacidad
               </a>
             </label>
@@ -117,7 +117,7 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           <div class="flex items-center mt-4">
             <Text tag="p" variant="textSM" class="text-base-500">
               ¿Ya tienes cuenta?
-              <a class="text-accent-700 hover:text-base-500" href="/login">
+              <a class="text-accent-400 hover:text-accent-300" href="/login">
                 Iniciar sesión
               </a>
             </Text>
@@ -203,7 +203,6 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         throw new Error(err.message ?? "Error al crear la cuenta");
       }
 
-      // Auto-login after registration
       const loginRes = await fetch(`${apiBase}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -21,12 +21,13 @@ const pricingTiers = [
       "Soporte por email",
     ],
     cta: "Comenzar con Básico",
-    buttonVariant: "default",
+    buttonVariant: "muted",
     isPopular: false,
-    bgClass: "bg-base-50 ring-4 ring-base-50",
-    textClass: "text-base-900",
-    priceClass: "text-base-900",
-    descClass: "text-base-500",
+    bgClass: "bg-base-900 border-base-800",
+    innerClass: "bg-base-800/50",
+    textClass: "text-base-100",
+    priceClass: "text-base-50",
+    descClass: "text-base-400",
   },
   {
     name: "Profesional",
@@ -44,12 +45,13 @@ const pricingTiers = [
       "Programa de lealtad para clientes",
     ],
     cta: "Ir a Profesional",
-    buttonVariant: "muted",
+    buttonVariant: "default",
     isPopular: true,
-    bgClass: "bg-accent-950 ring-4 ring-accent-50",
-    textClass: "text-white",
-    priceClass: "text-white",
-    descClass: "text-base-200",
+    bgClass: "bg-base-900 border-accent-700/50",
+    innerClass: "bg-base-800",
+    textClass: "text-base-50",
+    priceClass: "text-accent-400",
+    descClass: "text-base-400",
   },
   {
     name: "Enterprise",
@@ -67,52 +69,53 @@ const pricingTiers = [
       "Onboarding personalizado",
     ],
     cta: "Hablar con ventas",
-    buttonVariant: "default",
+    buttonVariant: "muted",
     isPopular: false,
-    bgClass: "bg-base-50 ring-4 ring-base-50",
-    textClass: "text-base-900",
-    priceClass: "text-base-900",
-    descClass: "text-base-500",
+    bgClass: "bg-base-900 border-base-800",
+    innerClass: "bg-base-800/50",
+    textClass: "text-base-100",
+    priceClass: "text-base-50",
+    descClass: "text-base-400",
   },
 ];
 ---
 
-<section id="pricing">
+<section id="pricing" class="bg-base-900 border-y border-base-800">
   <Wrapper variant="standard" class="py-20">
     <div class="max-w-xl text-center mx-auto">
       <Text
         tag="span"
         variant="textSM"
-        class="leading-normal font-bold uppercase text-accent-700"
+        class="leading-normal font-medium uppercase tracking-widest text-accent-500"
       >
         Precios
       </Text>
       <Text
         tag="h2"
         variant="displayMD"
-        class="tracking-tight mt-4 font-semibold text-base-900"
+        class="tracking-tight mt-4 font-semibold text-base-50 font-display"
       >
         Planes para cada etapa de tu negocio
       </Text>
       <Text
         tag="p"
         variant="textBase"
-        class="mt-4 text-base-500 font-medium text-balance"
+        class="mt-4 text-base-400 font-medium text-balance"
       >
         Empieza gratis 14 días y escala cuando necesites más funciones.
       </Text>
       <div
         aria-labelledby="pricing-toggle"
-        class="w-full relative mt-8 ring-1 ring-base-200 ring-offset-2 bg-white overflow-hidden justify-center gap-4 mx-auto lg:mx-0 inline-flex p-1 rounded-md max-w-52 shadow z-0"
+        class="w-full relative mt-8 ring-1 ring-base-700 ring-offset-2 ring-offset-base-900 bg-base-800 overflow-hidden justify-center gap-4 mx-auto lg:mx-0 inline-flex p-1 rounded-md max-w-52 shadow z-0"
       >
         <div
           id="pricing-indicator"
-          class="absolute inset-0 bg-accent-950 rounded-md transition-transform duration-200 ease-in-out w-1/2 translate-x-0"
+          class="absolute inset-0 bg-accent-600 rounded-md transition-transform duration-200 ease-in-out w-1/2 translate-x-0"
         >
         </div>
         <button
           id="monthly-pricing-button"
-          class="relative flex items-center justify-center w-full px-2 h-6 text-xs font-medium focus:outline-none transition-colors duration-300 z-10 text-white"
+          class="relative flex items-center justify-center w-full px-2 h-6 text-xs font-medium focus:outline-none transition-colors duration-300 z-10 text-base-950"
           type="button"
           aria-pressed="true"
         >
@@ -120,7 +123,7 @@ const pricingTiers = [
         </button>
         <button
           id="annual-pricing-button"
-          class="relative flex items-center justify-center w-full px-2 h-6 text-xs font-medium focus:outline-none transition-colors duration-300 z-10 text-base-500 hover:text-accent-500"
+          class="relative flex items-center justify-center w-full px-2 h-6 text-xs font-medium focus:outline-none transition-colors duration-300 z-10 text-base-400 hover:text-accent-400"
           type="button"
           aria-pressed="false"
         >
@@ -134,10 +137,10 @@ const pricingTiers = [
       {
         pricingTiers.map((tier, index) => (
           <div
-            class={`flex flex-col h-full p-1 lg:py-1 rounded-3xl ${tier.bgClass} border border-base-200`}
+            class={`flex flex-col h-full p-1 lg:py-1 rounded-3xl border ${tier.bgClass}`}
           >
             <div
-              class={`p-8 ${tier.isPopular ? "bg-white/5" : "bg-white"} rounded-[1.3rem] flex flex-col justify-between`}
+              class={`p-8 ${tier.innerClass} rounded-[1.3rem] flex flex-col justify-between`}
             >
               <div>
                 <div class="flex items-start justify-between w-full">
@@ -145,7 +148,7 @@ const pricingTiers = [
                     <Text
                       tag="h3"
                       variant="textBase"
-                      class={`font-medium ${tier.textClass}`}
+                      class={`font-medium font-display ${tier.textClass}`}
                     >
                       {tier.name}
                     </Text>
@@ -154,7 +157,7 @@ const pricingTiers = [
                     </Text>
                   </div>
                   {tier.isPopular && (
-                    <span class="inline-flex items-center font-medium relative text-accent-800 bg-white px-2.5 py-1 text-xs rounded-md">
+                    <span class="inline-flex items-center font-medium relative text-base-950 bg-accent-500 px-2.5 py-1 text-xs rounded-md">
                       Popular
                     </span>
                   )}
@@ -181,7 +184,7 @@ const pricingTiers = [
               <Text
                 tag="p"
                 variant="displayMD"
-                class={`font-medium flex items-baseline ${tier.priceClass}`}
+                class={`font-medium flex items-baseline font-display ${tier.priceClass}`}
               >
                 <span
                   id={`price-amount-${index}`}
@@ -191,7 +194,7 @@ const pricingTiers = [
                   {tier.monthlyPrice}
                 </span>
                 <span
-                  class={`text-sm font-normal tracking-normal ${tier.isPopular ? "text-white/70" : "text-base-500"}`}
+                  class="text-sm font-normal tracking-normal text-base-500"
                 >
                   <span id={`billing-monthly-${index}`}>/mes</span>
                   <span id={`billing-annual-${index}`} class="hidden">
@@ -203,7 +206,7 @@ const pricingTiers = [
                 <Text
                   tag="p"
                   variant="textSM"
-                  class={`font-medium uppercase ${tier.descClass}`}
+                  class={`font-medium uppercase tracking-widest ${tier.descClass}`}
                 >
                   {tier.name} incluye:
                 </Text>
@@ -213,7 +216,7 @@ const pricingTiers = [
                 >
                   {tier.features.map((feature) => (
                     <li class="flex items-start gap-2">
-                      <Check size="sm" />
+                      <Check size="sm" class="text-accent-500 shrink-0 mt-0.5" />
                       <span class="text-sm leading-normal">{feature}</span>
                     </li>
                   ))}
@@ -233,13 +236,12 @@ const pricingTiers = [
     const indicator = document.getElementById("pricing-indicator");
     if (!monthlyBtn || !annualBtn || !indicator) return;
     const togglePricing = (isMonthly: boolean) => {
-      const activeClass = "text-white";
-      const inactiveClasses = ["text-base-500", "hover:text-accent-500"];
       [monthlyBtn, annualBtn].forEach((btn, idx) => {
         const active = idx === 0 ? isMonthly : !isMonthly;
         btn.setAttribute("aria-pressed", active.toString());
-        btn.classList.toggle(activeClass, active);
-        inactiveClasses.forEach((c) => btn.classList.toggle(c, !active));
+        btn.classList.toggle("text-base-950", active);
+        btn.classList.toggle("text-base-400", !active);
+        btn.classList.toggle("hover:text-accent-400", !active);
       });
       indicator.classList.toggle("translate-x-0", isMonthly);
       indicator.classList.toggle("translate-x-full", !isMonthly);

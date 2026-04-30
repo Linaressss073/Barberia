@@ -27,45 +27,38 @@ const cards = [
 ];
 ---
 
-<section>
+<section class="bg-base-900 border-y border-base-800">
   <Wrapper variant="standard" class="py-20">
     <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
       {
         cards.map((card) => (
           <div
             class:list={[
-              "flex flex-col justify-between gap-8 p-8 rounded-2xl border border-base-200",
-              card.dark ? "bg-accent-950" : "bg-base-50 ring-4 ring-base-50",
+              "flex flex-col justify-between gap-8 p-8 rounded-2xl border",
+              card.dark
+                ? "bg-base-800 border-accent-800/40"
+                : "bg-base-900 border-base-800",
             ]}
           >
             <div>
               <Text
                 tag="span"
                 variant="textSM"
-                class:list={[
-                  "leading-normal font-bold uppercase",
-                  card.dark ? "text-accent-300" : "text-accent-700",
-                ]}
+                class="leading-normal font-medium uppercase tracking-widest text-accent-500"
               >
                 {card.eyebrow}
               </Text>
               <Text
                 tag="h3"
                 variant="displaySM"
-                class:list={[
-                  "mt-3 font-semibold tracking-tight",
-                  card.dark ? "text-white" : "text-base-900",
-                ]}
+                class="mt-3 font-semibold tracking-tight text-base-50 font-display"
               >
                 {card.title}
               </Text>
               <Text
                 tag="p"
                 variant="textBase"
-                class:list={[
-                  "mt-3 font-medium",
-                  card.dark ? "text-base-300" : "text-base-500",
-                ]}
+                class="mt-3 font-medium text-base-400"
               >
                 {card.description}
               </Text>

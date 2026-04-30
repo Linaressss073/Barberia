@@ -45,16 +45,6 @@ export class EnvironmentVariables {
   @MinLength(20)
   DATABASE_URL!: string;
 
-  @IsBooleanString()
-  DATABASE_SSL!: string;
-
-  @IsBooleanString()
-  DATABASE_LOGGING!: string;
-
-  @IsInt()
-  @Min(1)
-  DATABASE_POOL_MAX!: number;
-
   @IsString()
   @MinLength(32)
   JWT_ACCESS_SECRET!: string;

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import {
   BusinessRuleViolation,
   EntityConflict,
@@ -8,12 +10,11 @@ import {
   InvalidArgument,
 } from '@core/exceptions/domain.exception';
 import { requestContext } from '@core/context/request-context';
-import { AppointmentOrmEntity } from '../infrastructure/persistence/appointment.orm-entity';
-import { AppointmentItemOrmEntity } from '../infrastructure/persistence/appointment-item.orm-entity';
-import { CustomerOrmEntity } from '@modules/customers/infrastructure/persistence/customer.orm-entity';
-import { BarberOrmEntity } from '@modules/barbers/infrastructure/persistence/barber.orm-entity';
-import { ServiceOrmEntity } from '@modules/services/infrastructure/persistence/service.orm-entity';
-import { BarberBlockOrmEntity } from '@modules/barbers/infrastructure/persistence/barber-block.orm-entity';
+import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persistence/appointment.schema';
+import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
+import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
+import { BarberBlockDoc, BarberBlockDocument } from '@modules/barbers/infrastructure/persistence/barber-block.schema';
+import { ServiceDoc, ServiceDocument } from '@modules/services/infrastructure/persistence/service.schema';
 
 export interface BookAppointmentInput {
   customerId: string;
@@ -24,19 +25,16 @@ export interface BookAppointmentInput {
   notes?: string;
 }
 
-/**
- * BookAppointmentUseCase
- * Validaciones:
- *  - Customer y Barber existen y barber está activo.
- *  - Servicios existen y activos.
- *  - scheduledAt > now (servidor).
- *  - Suma de duración determina endsAt.
- *  - Sin solape con bloqueos del barbero.
- *  - Sin doble booking (garantizado por EXCLUDE USING gist a nivel BD).
- */
 @Injectable()
 export class BookAppointmentUseCase {
-  constructor(@InjectDataSource() private readonly ds: DataSource) {}
+  constructor(
+    @InjectConnection() private readonly connection: Connection,
+    @InjectModel(AppointmentDoc.name) private readonly appts: Model<AppointmentDocument>,
+    @InjectModel(CustomerDoc.name) private readonly customers: Model<CustomerDocument>,
+    @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
+    @InjectModel(BarberBlockDoc.name) private readonly blocks: Model<BarberBlockDocument>,
+    @InjectModel(ServiceDoc.name) private readonly services: Model<ServiceDocument>,
+  ) {}
 
   async execute(
     input: BookAppointmentInput,
@@ -45,47 +43,52 @@ export class BookAppointmentUseCase {
       throw new InvalidArgument('scheduledAt must be in the future');
     }
 
-    return this.ds.transaction('REPEATABLE READ', async (em) => {
-      const customer = await em.findOne(CustomerOrmEntity, { where: { id: input.customerId } });
-      if (!customer) throw new EntityNotFound('Customer not found');
+    const session = await this.connection.startSession();
+    try {
+      return await session.withTransaction(async () => {
+        const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null }, null, { session });
+        if (!customer) throw new EntityNotFound('Customer not found');
 
-      const barber = await em.findOne(BarberOrmEntity, { where: { id: input.barberId } });
-      if (!barber) throw new EntityNotFound('Barber not found');
-      if (!barber.active) throw new BusinessRuleViolation('Barber is not active');
+        const barber = await this.barbers.findOne({ _id: input.barberId }, null, { session });
+        if (!barber) throw new EntityNotFound('Barber not found');
+        if (!barber.active) throw new BusinessRuleViolation('Barber is not active');
 
-      if (input.serviceIds.length === 0)
-        throw new InvalidArgument('At least one service is required');
-      const services = await em
-        .createQueryBuilder(ServiceOrmEntity, 's')
-        .where('s.id IN (:...ids) AND s.active = true AND s.deleted_at IS NULL', {
-          ids: input.serviceIds,
-        })
-        .getMany();
-      if (services.length !== input.serviceIds.length) {
-        throw new EntityNotFound('One or more services not found or inactive');
-      }
+        if (input.serviceIds.length === 0) throw new InvalidArgument('At least one service is required');
 
-      const totalDuration = services.reduce((sum, s) => sum + s.durationMin, 0);
-      const totalPrice = services.reduce((sum, s) => sum + s.priceCents, 0);
-      const endsAt = new Date(input.scheduledAt.getTime() + totalDuration * 60_000);
+        const svcs = await this.services.find({
+          _id: { $in: input.serviceIds },
+          active: true,
+          deletedAt: null,
+        }, null, { session });
+        if (svcs.length !== input.serviceIds.length) {
+          throw new EntityNotFound('One or more services not found or inactive');
+        }
 
-      // Verificar solape con bloqueos del barbero (los bloqueos no entran al EXCLUDE de appointments)
-      const blockOverlap = await em
-        .createQueryBuilder(BarberBlockOrmEntity, 'b')
-        .where('b.barber_id = :id', { id: input.barberId })
-        .andWhere(`tstzrange(b.starts_at, b.ends_at, '[)') && tstzrange(:s, :e, '[)')`, {
-          s: input.scheduledAt,
-          e: endsAt,
-        })
-        .getCount();
-      if (blockOverlap > 0) throw new BusinessRuleViolation('Barber has a block on that time');
+        const totalDuration = svcs.reduce((s, sv) => s + sv.durationMin, 0);
+        const totalCents = svcs.reduce((s, sv) => s + sv.priceCents, 0);
+        const endsAt = new Date(input.scheduledAt.getTime() + totalDuration * 60_000);
 
-      const ctx = requestContext.get();
-      const insertResult = await em
-        .createQueryBuilder()
-        .insert()
-        .into(AppointmentOrmEntity)
-        .values({
+        // Check block overlap
+        const blockOverlap = await this.blocks.countDocuments({
+          barberId: input.barberId,
+          startsAt: { $lt: endsAt },
+          endsAt: { $gt: input.scheduledAt },
+        }, { session });
+        if (blockOverlap > 0) throw new BusinessRuleViolation('Barber has a block on that time');
+
+        // Check appointment overlap
+        const apptOverlap = await this.appts.countDocuments({
+          barberId: input.barberId,
+          status: { $nin: ['CANCELLED', 'NO_SHOW'] },
+          scheduledAt: { $lt: endsAt },
+          endsAt: { $gt: input.scheduledAt },
+        }, { session });
+        if (apptOverlap > 0) throw new EntityConflict('Time slot is no longer available');
+
+        const ctx = requestContext.get();
+        const appointmentId = uuidv4();
+        await this.appts.create([{
+          _id: appointmentId,
           customerId: input.customerId,
           barberId: input.barberId,
           scheduledAt: input.scheduledAt,
@@ -94,30 +97,18 @@ export class BookAppointmentUseCase {
           source: input.source ?? 'WEB',
           notes: input.notes ?? null,
           createdBy: ctx?.userId ?? null,
-        })
-        .execute()
-        .catch((err: unknown) => {
-          if (
-            err instanceof QueryFailedError &&
-            err.message.includes('ex_appointments_no_overlap')
-          ) {
-            throw new EntityConflict('Time slot is no longer available');
-          }
-          throw err;
-        });
+          items: svcs.map((s) => ({
+            id: uuidv4(),
+            serviceId: s._id,
+            priceCents: s.priceCents,
+            durationMin: s.durationMin,
+          })),
+        }], { session });
 
-      const appointmentId = insertResult.identifiers[0]?.id as string;
-      await em.insert(
-        AppointmentItemOrmEntity,
-        services.map((s) => ({
-          appointmentId,
-          serviceId: s.id,
-          priceCents: s.priceCents,
-          durationMin: s.durationMin,
-        })),
-      );
-
-      return { id: appointmentId, endsAt, totalCents: totalPrice };
-    });
+        return { id: appointmentId, endsAt, totalCents };
+      });
+    } finally {
+      await session.endSession();
+    }
   }
 }

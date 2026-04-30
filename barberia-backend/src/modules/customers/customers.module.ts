@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { CustomerOrmEntity } from './infrastructure/persistence/customer.orm-entity';
-import { TypeOrmCustomerRepository } from './infrastructure/persistence/typeorm-customer.repository';
+import { MongooseModule } from '@nestjs/mongoose';
+import { CustomerDoc, CustomerSchema } from './infrastructure/persistence/customer.schema';
+import { MongoCustomerRepository } from './infrastructure/persistence/typeorm-customer.repository';
 import { CUSTOMER_REPOSITORY } from './domain/repositories/customer.repository';
 import { CreateCustomerUseCase } from './application/use-cases/create-customer.use-case';
 import { UpdateCustomerUseCase } from './application/use-cases/update-customer.use-case';
@@ -14,10 +14,10 @@ import {
 import { CustomersController } from './presentation/controllers/customers.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CustomerOrmEntity])],
+  imports: [MongooseModule.forFeature([{ name: CustomerDoc.name, schema: CustomerSchema }])],
   controllers: [CustomersController],
   providers: [
-    { provide: CUSTOMER_REPOSITORY, useClass: TypeOrmCustomerRepository },
+    { provide: CUSTOMER_REPOSITORY, useClass: MongoCustomerRepository },
     CreateCustomerUseCase,
     UpdateCustomerUseCase,
     GetCustomerUseCase,
@@ -25,6 +25,6 @@ import { CustomersController } from './presentation/controllers/customers.contro
     AddLoyaltyPointsUseCase,
     RedeemLoyaltyPointsUseCase,
   ],
-  exports: [CUSTOMER_REPOSITORY],
+  exports: [CUSTOMER_REPOSITORY, MongooseModule],
 })
 export class CustomersModule {}

@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { QueryFailedError } from 'typeorm';
+import { MongoServerError } from 'mongodb';
 import { DomainException } from '../exceptions/domain.exception';
 
 interface ErrorPayload {
@@ -19,11 +19,6 @@ interface ErrorPayload {
   details?: unknown;
 }
 
-/**
- * Filtro global que normaliza TODA respuesta de error a un contrato consistente.
- * Mapea: DomainException -> httpStatus + code, HttpException -> nativo,
- * QueryFailedError (Postgres) -> 409/400 según código, resto -> 500.
- */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -77,15 +72,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       };
     }
 
-    if (exception instanceof QueryFailedError) {
-      const driverErr = exception.driverError as { code?: string; detail?: string };
-      const isUnique = driverErr.code === '23505';
-      const isFk = driverErr.code === '23503';
+    if (exception instanceof MongoServerError) {
+      const isUnique = exception.code === 11000;
       return {
         ...base,
-        statusCode: isUnique || isFk ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST,
-        code: isUnique ? 'UNIQUE_VIOLATION' : isFk ? 'FK_VIOLATION' : 'DB_QUERY_FAILED',
-        message: driverErr.detail ?? exception.message,
+        statusCode: isUnique ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST,
+        code: isUnique ? 'UNIQUE_VIOLATION' : 'DB_QUERY_FAILED',
+        message: isUnique ? 'Duplicate key violation' : exception.message,
       };
     }
 

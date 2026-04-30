@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { BarberOrmEntity } from './infrastructure/persistence/barber.orm-entity';
-import { BarberScheduleOrmEntity } from './infrastructure/persistence/barber-schedule.orm-entity';
-import { BarberBlockOrmEntity } from './infrastructure/persistence/barber-block.orm-entity';
-import { TypeOrmBarberRepository } from './infrastructure/persistence/typeorm-barber.repository';
+import { MongooseModule } from '@nestjs/mongoose';
+import { BarberDoc, BarberSchema } from './infrastructure/persistence/barber.schema';
+import { BarberBlockDoc, BarberBlockSchema } from './infrastructure/persistence/barber-block.schema';
+import { MongoBarberRepository } from './infrastructure/persistence/typeorm-barber.repository';
 import { BARBER_REPOSITORY } from './domain/repositories/barber.repository';
 import {
   BlockBarberTimeUseCase,
@@ -17,11 +16,14 @@ import { BarbersController } from './presentation/controllers/barbers.controller
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BarberOrmEntity, BarberScheduleOrmEntity, BarberBlockOrmEntity]),
+    MongooseModule.forFeature([
+      { name: BarberDoc.name, schema: BarberSchema },
+      { name: BarberBlockDoc.name, schema: BarberBlockSchema },
+    ]),
   ],
   controllers: [BarbersController],
   providers: [
-    { provide: BARBER_REPOSITORY, useClass: TypeOrmBarberRepository },
+    { provide: BARBER_REPOSITORY, useClass: MongoBarberRepository },
     CreateBarberUseCase,
     UpdateBarberUseCase,
     SetBarberSchedulesUseCase,
@@ -29,6 +31,6 @@ import { BarbersController } from './presentation/controllers/barbers.controller
     ListBarbersUseCase,
     GetBarberUseCase,
   ],
-  exports: [BARBER_REPOSITORY],
+  exports: [BARBER_REPOSITORY, MongooseModule],
 })
 export class BarbersModule {}

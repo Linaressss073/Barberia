@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 
-import { UserOrmEntity } from './infrastructure/persistence/user.orm-entity';
-import { RefreshTokenOrmEntity } from './infrastructure/persistence/refresh-token.orm-entity';
-import { JwtDenylistOrmEntity } from './infrastructure/persistence/jwt-denylist.orm-entity';
-import { TypeOrmUserRepository } from './infrastructure/persistence/typeorm-user.repository';
-import { TypeOrmRefreshTokenRepository } from './infrastructure/persistence/typeorm-refresh-token.repository';
-import { TypeOrmJwtDenylist } from './infrastructure/persistence/typeorm-jwt-denylist';
+import { UserDoc, UserSchema } from './infrastructure/persistence/user.schema';
+import { RefreshTokenDoc, RefreshTokenSchema } from './infrastructure/persistence/refresh-token.schema';
+import { JwtDenylistDoc, JwtDenylistSchema } from './infrastructure/persistence/jwt-denylist.schema';
+import { MongoUserRepository } from './infrastructure/persistence/typeorm-user.repository';
+import { MongoRefreshTokenRepository } from './infrastructure/persistence/typeorm-refresh-token.repository';
+import { MongoJwtDenylist } from './infrastructure/persistence/typeorm-jwt-denylist';
 import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password-hasher';
 import { JwtTokenSigner } from './infrastructure/security/jwt-token-signer';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
@@ -28,16 +28,20 @@ import { AuthController } from './presentation/controllers/auth.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserOrmEntity, RefreshTokenOrmEntity, JwtDenylistOrmEntity]),
+    MongooseModule.forFeature([
+      { name: UserDoc.name, schema: UserSchema },
+      { name: RefreshTokenDoc.name, schema: RefreshTokenSchema },
+      { name: JwtDenylistDoc.name, schema: JwtDenylistSchema },
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),
   ],
   controllers: [AuthController],
   providers: [
     JwtStrategy,
-    { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
-    { provide: REFRESH_TOKEN_REPOSITORY, useClass: TypeOrmRefreshTokenRepository },
-    { provide: JWT_DENYLIST, useClass: TypeOrmJwtDenylist },
+    { provide: USER_REPOSITORY, useClass: MongoUserRepository },
+    { provide: REFRESH_TOKEN_REPOSITORY, useClass: MongoRefreshTokenRepository },
+    { provide: JWT_DENYLIST, useClass: MongoJwtDenylist },
     { provide: PASSWORD_HASHER, useClass: BcryptPasswordHasher },
     { provide: TOKEN_SIGNER, useClass: JwtTokenSigner },
     RegisterUserUseCase,
@@ -45,6 +49,6 @@ import { AuthController } from './presentation/controllers/auth.controller';
     RefreshTokenUseCase,
     LogoutUseCase,
   ],
-  exports: [USER_REPOSITORY, PASSWORD_HASHER],
+  exports: [USER_REPOSITORY, PASSWORD_HASHER, MongooseModule],
 })
 export class AuthModule {}

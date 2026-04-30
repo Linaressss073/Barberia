@@ -1,40 +1,36 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository';
 import { RefreshToken } from '../../domain/entities/refresh-token.entity';
-import { RefreshTokenOrmEntity } from './refresh-token.orm-entity';
+import { RefreshTokenDoc, RefreshTokenDocument } from './refresh-token.schema';
 import { RefreshTokenMapper } from './refresh-token.mapper';
 
 @Injectable()
-export class TypeOrmRefreshTokenRepository implements RefreshTokenRepository {
+export class MongoRefreshTokenRepository implements RefreshTokenRepository {
   constructor(
-    @InjectRepository(RefreshTokenOrmEntity)
-    private readonly repo: Repository<RefreshTokenOrmEntity>,
+    @InjectModel(RefreshTokenDoc.name) private readonly model: Model<RefreshTokenDocument>,
   ) {}
 
   async save(token: RefreshToken): Promise<void> {
-    await this.repo.save(RefreshTokenMapper.toOrm(token));
+    const data = RefreshTokenMapper.toDoc(token);
+    await this.model.findOneAndUpdate({ _id: data._id }, { $set: data }, { upsert: true });
   }
 
   async findActiveByHash(tokenHash: string): Promise<RefreshToken | null> {
-    const row = await this.repo.findOne({
-      where: {
-        tokenHash,
-        revokedAt: IsNull(),
-        expiresAt: MoreThan(new Date()),
-      },
+    const doc = await this.model.findOne({
+      tokenHash,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
     });
-    return row ? RefreshTokenMapper.toDomain(row) : null;
+    return doc ? RefreshTokenMapper.toDomain(doc) : null;
   }
 
   async revokeAllForUser(userId: UniqueEntityId): Promise<void> {
-    await this.repo
-      .createQueryBuilder()
-      .update(RefreshTokenOrmEntity)
-      .set({ revokedAt: () => 'NOW()' })
-      .where('user_id = :userId AND revoked_at IS NULL', { userId: userId.value })
-      .execute();
+    await this.model.updateMany(
+      { userId: userId.value, revokedAt: null },
+      { $set: { revokedAt: new Date() } },
+    );
   }
 }

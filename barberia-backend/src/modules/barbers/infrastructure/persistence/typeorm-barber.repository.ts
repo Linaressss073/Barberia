@@ -1,67 +1,59 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { BarberListFilter, BarberRepository } from '../../domain/repositories/barber.repository';
 import { Barber } from '../../domain/entities/barber.entity';
-import { BarberOrmEntity } from './barber.orm-entity';
-import { BarberScheduleOrmEntity } from './barber-schedule.orm-entity';
-import { BarberBlockOrmEntity } from './barber-block.orm-entity';
+import { BarberDoc, BarberDocument } from './barber.schema';
+import { BarberBlockDoc, BarberBlockDocument } from './barber-block.schema';
 import { BarberMapper } from './barber.mapper';
 
 @Injectable()
-export class TypeOrmBarberRepository implements BarberRepository {
+export class MongoBarberRepository implements BarberRepository {
   constructor(
-    @InjectRepository(BarberOrmEntity) private readonly repo: Repository<BarberOrmEntity>,
-    @InjectRepository(BarberScheduleOrmEntity)
-    private readonly schedules: Repository<BarberScheduleOrmEntity>,
-    @InjectRepository(BarberBlockOrmEntity)
-    private readonly blocks: Repository<BarberBlockOrmEntity>,
+    @InjectModel(BarberDoc.name) private readonly model: Model<BarberDocument>,
+    @InjectModel(BarberBlockDoc.name) private readonly blocks: Model<BarberBlockDocument>,
   ) {}
 
   async findById(id: UniqueEntityId): Promise<Barber | null> {
-    const row = await this.repo.findOne({ where: { id: id.value } });
-    return row ? BarberMapper.toDomain(row) : null;
+    const doc = await this.model.findOne({ _id: id.value });
+    return doc ? BarberMapper.toDomain(doc) : null;
   }
 
   async findByUserId(userId: UniqueEntityId): Promise<Barber | null> {
-    const row = await this.repo.findOne({ where: { userId: userId.value } });
-    return row ? BarberMapper.toDomain(row) : null;
+    const doc = await this.model.findOne({ userId: userId.value });
+    return doc ? BarberMapper.toDomain(doc) : null;
   }
 
   async save(barber: Barber): Promise<void> {
-    const orm = BarberMapper.toOrm(barber);
-    // Replace schedules atomically.
-    await this.schedules.delete({ barberId: barber.id.value });
-    await this.repo.save(orm);
+    const data = BarberMapper.toDoc(barber);
+    await this.model.findOneAndUpdate({ _id: data._id }, { $set: data }, { upsert: true });
   }
 
   async paginate(filter: BarberListFilter): Promise<{ items: Barber[]; total: number }> {
-    const qb = this.repo
-      .createQueryBuilder('b')
-      .leftJoinAndSelect('b.schedules', 's')
-      .orderBy('b.created_at', 'DESC')
-      .skip((filter.page - 1) * filter.limit)
-      .take(filter.limit);
+    const query: Record<string, unknown> = {};
+    if (filter.onlyActive) query['active'] = true;
     if (filter.search) {
-      qb.andWhere('(b.display_name ILIKE :s OR b.specialty ILIKE :s)', {
-        s: `%${filter.search}%`,
-      });
+      query['$or'] = [
+        { displayName: { $regex: filter.search, $options: 'i' } },
+        { specialty: { $regex: filter.search, $options: 'i' } },
+      ];
     }
-    if (filter.onlyActive) qb.andWhere('b.active = true');
-    const [rows, total] = await qb.getManyAndCount();
-    return { items: rows.map(BarberMapper.toDomain), total };
+    const skip = (filter.page - 1) * filter.limit;
+    const [docs, total] = await Promise.all([
+      this.model.find(query).sort({ createdAt: -1 }).skip(skip).limit(filter.limit),
+      this.model.countDocuments(query),
+    ]);
+    return { items: docs.map(BarberMapper.toDomain), total };
   }
 
   async hasBlockOverlap(barberId: UniqueEntityId, startsAt: Date, endsAt: Date): Promise<boolean> {
-    const count = await this.blocks
-      .createQueryBuilder('b')
-      .where('b.barber_id = :id', { id: barberId.value })
-      .andWhere("tstzrange(b.starts_at, b.ends_at, '[)') && tstzrange(:s, :e, '[)')", {
-        s: startsAt,
-        e: endsAt,
-      })
-      .getCount();
+    const count = await this.blocks.countDocuments({
+      barberId: barberId.value,
+      startsAt: { $lt: endsAt },
+      endsAt: { $gt: startsAt },
+    });
     return count > 0;
   }
 
@@ -71,7 +63,8 @@ export class TypeOrmBarberRepository implements BarberRepository {
     endsAt: Date,
     reason?: string,
   ): Promise<void> {
-    await this.blocks.insert({
+    await this.blocks.create({
+      _id: uuidv4(),
       barberId: barberId.value,
       startsAt,
       endsAt,

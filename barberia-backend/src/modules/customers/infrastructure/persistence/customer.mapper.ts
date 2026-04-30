@@ -1,38 +1,36 @@
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { Customer } from '../../domain/entities/customer.entity';
-import { CustomerOrmEntity } from './customer.orm-entity';
+import { CustomerDocument } from './customer.schema';
 
 export class CustomerMapper {
-  static toDomain(orm: CustomerOrmEntity): Customer {
+  static toDomain(doc: CustomerDocument): Customer {
     return Customer.rehydrate(
       {
-        userId: orm.userId ? new UniqueEntityId(orm.userId) : undefined,
-        document: orm.document ?? undefined,
-        fullName: orm.fullName,
-        phone: orm.phone ?? undefined,
-        birthdate: orm.birthdate ?? undefined,
-        loyaltyPoints: orm.loyaltyPoints,
-        preferences: orm.preferences ?? {},
-        createdAt: orm.createdAt,
-        updatedAt: orm.updatedAt,
+        userId: doc.userId ? new UniqueEntityId(doc.userId) : undefined,
+        document: doc.document ?? undefined,
+        fullName: doc.fullName,
+        phone: doc.phone ?? undefined,
+        birthdate: doc.birthdate ?? undefined,
+        loyaltyPoints: doc.loyaltyPoints,
+        preferences: doc.preferences ?? {},
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
       },
-      new UniqueEntityId(orm.id),
+      new UniqueEntityId(doc._id),
     );
   }
 
-  static toOrm(domain: Customer): CustomerOrmEntity {
-    const orm = new CustomerOrmEntity();
-    orm.id = domain.id.value;
-    orm.userId = domain.userId?.value ?? null;
-    orm.document = domain.document ?? null;
-    orm.fullName = domain.fullName;
-    orm.phone = domain.phone ?? null;
-    orm.birthdate = domain.birthdate ?? null;
-    orm.loyaltyPoints = domain.loyaltyPoints;
-    orm.preferences = domain.preferences;
-    orm.createdAt = domain.createdAt;
-    orm.updatedAt = domain.updatedAt;
-    orm.deletedAt = null;
-    return orm;
+  static toDoc(domain: Customer): Record<string, unknown> {
+    return {
+      _id: domain.id.value,
+      userId: domain.userId?.value ?? null,
+      document: domain.document ?? null,
+      fullName: domain.fullName,
+      phone: domain.phone ?? null,
+      birthdate: domain.birthdate ?? null,
+      loyaltyPoints: domain.loyaltyPoints,
+      preferences: domain.preferences,
+      deletedAt: null,
+    };
   }
 }

@@ -1,115 +1,174 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { SaleDoc, SaleDocument } from '@modules/sales/infrastructure/persistence/sale.schema';
+import { AppointmentDoc, AppointmentDocument } from '@modules/appointments/infrastructure/persistence/appointment.schema';
+import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
+import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
 
 @Injectable()
 export class ReportsService {
-  constructor(@InjectDataSource() private readonly ds: DataSource) {}
+  constructor(
+    @InjectModel(SaleDoc.name) private readonly sales: Model<SaleDocument>,
+    @InjectModel(AppointmentDoc.name) private readonly appts: Model<AppointmentDocument>,
+    @InjectModel(CustomerDoc.name) private readonly customers: Model<CustomerDocument>,
+    @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
+  ) {}
 
-  /** Resumen diario de ventas en rango [from, to). */
   async dailySales(
     from: Date,
     to: Date,
   ): Promise<Array<{ day: string; sales: number; total_cents: number }>> {
-    return this.ds.query(
-      `SELECT date_trunc('day', closed_at)::date AS day,
-              COUNT(*)::int                       AS sales,
-              COALESCE(SUM(total_cents),0)::int   AS total_cents
-         FROM sales
-        WHERE status = 'CLOSED'
-          AND closed_at >= $1 AND closed_at < $2
-        GROUP BY 1
-        ORDER BY 1`,
-      [from, to],
-    );
+    const result = await this.sales.aggregate([
+      { $match: { status: 'CLOSED', closedAt: { $gte: from, $lt: to } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$closedAt' },
+          },
+          sales: { $sum: 1 },
+          total_cents: { $sum: '$totalCents' },
+        },
+      },
+      { $sort: { _id: 1 } },
+      { $project: { _id: 0, day: '$_id', sales: 1, total_cents: 1 } },
+    ]);
+    return result;
   }
 
-  /** Top servicios vendidos (por unidades + monto). */
   async topServices(from: Date, to: Date, limit = 10) {
-    return this.ds.query(
-      `SELECT s.id, s.name,
-              SUM(si.qty)::int          AS units,
-              SUM(si.total_cents)::int  AS revenue_cents
-         FROM sale_items si
-         JOIN sales sa ON sa.id = si.sale_id AND sa.status = 'CLOSED'
-                       AND sa.closed_at >= $1 AND sa.closed_at < $2
-         JOIN services s ON s.id = si.service_id
-        WHERE si.kind = 'SERVICE'
-        GROUP BY s.id, s.name
-        ORDER BY units DESC
-        LIMIT $3`,
-      [from, to, limit],
-    );
+    return this.sales.aggregate([
+      { $match: { status: 'CLOSED', closedAt: { $gte: from, $lt: to } } },
+      { $unwind: '$items' },
+      { $match: { 'items.kind': 'SERVICE' } },
+      {
+        $group: {
+          _id: '$items.serviceId',
+          units: { $sum: '$items.qty' },
+          revenue_cents: { $sum: '$items.totalCents' },
+        },
+      },
+      { $sort: { units: -1 } },
+      { $limit: limit },
+      { $project: { _id: 0, serviceId: '$_id', units: 1, revenue_cents: 1 } },
+    ]);
   }
 
-  /** Ocupación por barbero: % de minutos reservados vs minutos disponibles del rango. */
   async occupancyByBarber(from: Date, to: Date) {
-    return this.ds.query(
-      `SELECT b.id AS barber_id,
-              b.display_name,
-              COALESCE(SUM(EXTRACT(EPOCH FROM (a.ends_at - a.scheduled_at))/60), 0)::int AS booked_minutes,
-              EXTRACT(EPOCH FROM ($2::timestamptz - $1::timestamptz))/60::int            AS range_minutes
-         FROM barbers b
-         LEFT JOIN appointments a
-           ON a.barber_id = b.id
-          AND a.status NOT IN ('CANCELLED','NO_SHOW')
-          AND a.scheduled_at >= $1 AND a.scheduled_at < $2
-        GROUP BY b.id, b.display_name
-        ORDER BY booked_minutes DESC`,
-      [from, to],
+    const rangeMinutes =
+      Math.floor((to.getTime() - from.getTime()) / 60_000);
+
+    const apptAgg = await this.appts.aggregate([
+      {
+        $match: {
+          status: { $nin: ['CANCELLED', 'NO_SHOW'] },
+          scheduledAt: { $gte: from, $lt: to },
+        },
+      },
+      {
+        $group: {
+          _id: '$barberId',
+          booked_minutes: {
+            $sum: {
+              $divide: [{ $subtract: ['$endsAt', '$scheduledAt'] }, 60000],
+            },
+          },
+        },
+      },
+    ]);
+
+    const bookedMap = new Map<string, number>(
+      apptAgg.map((r: { _id: string; booked_minutes: number }) => [r._id, r.booked_minutes]),
     );
+
+    const allBarbers = await this.barbers.find();
+    return allBarbers.map((b) => ({
+      barber_id: b._id,
+      display_name: b.displayName,
+      booked_minutes: Math.round(bookedMap.get(b._id) ?? 0),
+      range_minutes: rangeMinutes,
+    }));
   }
 
-  /** Comisiones por barbero del periodo (sobre subtotal de servicios proporcionalmente). */
   async commissionsByBarber(from: Date, to: Date) {
-    return this.ds.query(
-      `WITH closed AS (
-         SELECT sa.id, sa.barber_id, sa.subtotal_cents, sa.total_cents
-           FROM sales sa
-          WHERE sa.status = 'CLOSED' AND sa.closed_at >= $1 AND sa.closed_at < $2
-       ),
-       per_sale AS (
-         SELECT c.barber_id,
-                CASE WHEN c.subtotal_cents > 0
-                     THEN c.total_cents
-                       * COALESCE(SUM(CASE WHEN si.kind='SERVICE' THEN si.total_cents ELSE 0 END) FILTER (WHERE TRUE),0)
-                       / NULLIF(c.subtotal_cents,0)
-                     ELSE 0 END AS service_base
-           FROM closed c
-           LEFT JOIN sale_items si ON si.sale_id = c.id
-          GROUP BY c.id, c.barber_id, c.subtotal_cents, c.total_cents
-       )
-       SELECT b.id AS barber_id, b.display_name, b.commission_pct,
-              COALESCE(SUM(ps.service_base)::int, 0)                         AS base_cents,
-              COALESCE(SUM(ps.service_base * b.commission_pct / 100)::int,0) AS commission_cents
-         FROM per_sale ps
-         JOIN barbers b ON b.id = ps.barber_id
-        GROUP BY b.id, b.display_name, b.commission_pct
-        ORDER BY commission_cents DESC`,
-      [from, to],
-    );
+    return this.sales.aggregate([
+      { $match: { status: 'CLOSED', closedAt: { $gte: from, $lt: to }, barberId: { $ne: null } } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$barberId',
+          service_base: {
+            $sum: {
+              $cond: [{ $eq: ['$items.kind', 'SERVICE'] }, '$items.totalCents', 0],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'barbers',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'barber',
+        },
+      },
+      { $unwind: '$barber' },
+      {
+        $project: {
+          barber_id: '$_id',
+          display_name: '$barber.displayName',
+          commission_pct: { $toDouble: '$barber.commissionPct' },
+          base_cents: '$service_base',
+          commission_cents: {
+            $floor: {
+              $multiply: [
+                '$service_base',
+                { $divide: [{ $toDouble: '$barber.commissionPct' }, 100] },
+              ],
+            },
+          },
+        },
+      },
+      { $sort: { commission_cents: -1 } },
+    ]);
   }
 
-  /** Clientes más frecuentes en el rango. */
   async topCustomers(from: Date, to: Date, limit = 10) {
-    return this.ds.query(
-      `SELECT c.id, c.full_name,
-              COUNT(a.*)::int AS visits,
-              COALESCE(SUM(s.total_cents),0)::int AS spent_cents
-         FROM customers c
-         LEFT JOIN appointments a
-           ON a.customer_id = c.id
-          AND a.status = 'COMPLETED'
-          AND a.scheduled_at >= $1 AND a.scheduled_at < $2
-         LEFT JOIN sales s
-           ON s.customer_id = c.id
-          AND s.status = 'CLOSED'
-          AND s.closed_at >= $1 AND s.closed_at < $2
-        GROUP BY c.id, c.full_name
-        HAVING COUNT(a.*) > 0 OR COALESCE(SUM(s.total_cents),0) > 0
-        ORDER BY spent_cents DESC
-        LIMIT $3`,
-      [from, to, limit],
-    );
+    return this.sales.aggregate([
+      {
+        $match: {
+          status: 'CLOSED',
+          closedAt: { $gte: from, $lt: to },
+          customerId: { $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: '$customerId',
+          spent_cents: { $sum: '$totalCents' },
+          visits: { $sum: 1 },
+        },
+      },
+      { $sort: { spent_cents: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'customers',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'customer',
+        },
+      },
+      { $unwind: '$customer' },
+      {
+        $project: {
+          _id: 0,
+          id: '$_id',
+          full_name: '$customer.fullName',
+          visits: 1,
+          spent_cents: 1,
+        },
+      },
+    ]);
   }
 }

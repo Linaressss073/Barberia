@@ -1,51 +1,45 @@
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { Barber } from '../../domain/entities/barber.entity';
-import { BarberOrmEntity } from './barber.orm-entity';
-import { BarberScheduleOrmEntity } from './barber-schedule.orm-entity';
+import { BarberDocument } from './barber.schema';
 
 export class BarberMapper {
-  static toDomain(orm: BarberOrmEntity): Barber {
+  static toDomain(doc: BarberDocument): Barber {
     return Barber.rehydrate(
       {
-        userId: new UniqueEntityId(orm.userId),
-        displayName: orm.displayName,
-        specialty: orm.specialty ?? undefined,
-        hireDate: orm.hireDate,
-        commissionPct: parseFloat(orm.commissionPct),
-        active: orm.active,
-        ratingAvg: parseFloat(orm.ratingAvg),
-        schedules: (orm.schedules ?? []).map((s) => ({
+        userId: new UniqueEntityId(doc.userId),
+        displayName: doc.displayName,
+        specialty: doc.specialty ?? undefined,
+        hireDate: doc.hireDate,
+        commissionPct: parseFloat(doc.commissionPct),
+        active: doc.active,
+        ratingAvg: parseFloat(doc.ratingAvg),
+        schedules: (doc.schedules ?? []).map((s) => ({
           weekday: s.weekday,
           startTime: s.startTime.slice(0, 5),
           endTime: s.endTime.slice(0, 5),
         })),
-        createdAt: orm.createdAt,
-        updatedAt: orm.updatedAt,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
       },
-      new UniqueEntityId(orm.id),
+      new UniqueEntityId(doc._id),
     );
   }
 
-  static toOrm(domain: Barber): BarberOrmEntity {
-    const orm = new BarberOrmEntity();
-    orm.id = domain.id.value;
-    orm.userId = domain.userId.value;
-    orm.displayName = domain.displayName;
-    orm.specialty = domain.specialty ?? null;
-    orm.hireDate = domain.hireDate;
-    orm.commissionPct = domain.commissionPct.toFixed(2);
-    orm.active = domain.active;
-    orm.ratingAvg = domain.ratingAvg.toFixed(2);
-    orm.createdAt = domain.createdAt;
-    orm.updatedAt = domain.updatedAt;
-    orm.schedules = domain.schedules.map((s) => {
-      const slot = new BarberScheduleOrmEntity();
-      slot.barberId = domain.id.value;
-      slot.weekday = s.weekday;
-      slot.startTime = s.startTime;
-      slot.endTime = s.endTime;
-      return slot;
-    });
-    return orm;
+  static toDoc(domain: Barber): Record<string, unknown> {
+    return {
+      _id: domain.id.value,
+      userId: domain.userId.value,
+      displayName: domain.displayName,
+      specialty: domain.specialty ?? null,
+      hireDate: domain.hireDate,
+      commissionPct: domain.commissionPct.toFixed(2),
+      active: domain.active,
+      ratingAvg: domain.ratingAvg.toFixed(2),
+      schedules: domain.schedules.map((s) => ({
+        weekday: s.weekday,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })),
+    };
   }
 }

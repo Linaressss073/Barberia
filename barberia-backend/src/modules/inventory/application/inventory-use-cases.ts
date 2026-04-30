@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, LessThanOrEqual, Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { EntityConflict, EntityNotFound } from '@core/exceptions/domain.exception';
-import { InventoryProductOrmEntity } from '../infrastructure/persistence/inventory-product.orm-entity';
+import {
+  InventoryProductDoc,
+  InventoryProductDocument,
+} from '../infrastructure/persistence/inventory-product.schema';
 import { InventoryDomainService } from '../domain/inventory.service';
 import { Page, buildPage } from '@shared/pagination/pagination.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface CreateProductInput {
   sku: string;
@@ -26,82 +30,76 @@ export interface UpdateProductInput {
 @Injectable()
 export class InventoryUseCases {
   constructor(
-    @InjectDataSource() private readonly ds: DataSource,
-    @InjectRepository(InventoryProductOrmEntity)
-    private readonly products: Repository<InventoryProductOrmEntity>,
+    @InjectModel(InventoryProductDoc.name) private readonly products: Model<InventoryProductDocument>,
     private readonly domain: InventoryDomainService,
   ) {}
 
-  async createProduct(input: CreateProductInput): Promise<InventoryProductOrmEntity> {
-    const exists = await this.products.findOne({ where: { sku: input.sku } });
+  async createProduct(input: CreateProductInput): Promise<InventoryProductDocument> {
+    const exists = await this.products.findOne({ sku: input.sku });
     if (exists) throw new EntityConflict('SKU already exists');
-    const created = await this.products.save(
-      this.products.create({
-        sku: input.sku,
-        name: input.name,
-        costCents: input.costCents,
-        salePriceCents: input.salePriceCents,
-        stock: input.initialStock ?? 0,
-        minStock: input.minStock ?? 0,
-        active: true,
-      }),
+    return this.products.create({
+      _id: uuidv4(),
+      sku: input.sku,
+      name: input.name,
+      costCents: input.costCents,
+      salePriceCents: input.salePriceCents,
+      stock: input.initialStock ?? 0,
+      minStock: input.minStock ?? 0,
+      active: true,
+    });
+  }
+
+  async updateProduct(id: string, patch: UpdateProductInput): Promise<InventoryProductDocument> {
+    const doc = await this.products.findOneAndUpdate(
+      { _id: id },
+      { $set: patch },
+      { new: true },
     );
-    return created;
+    if (!doc) throw new EntityNotFound('Product not found');
+    return doc;
   }
 
-  async updateProduct(id: string, patch: UpdateProductInput): Promise<InventoryProductOrmEntity> {
-    const p = await this.products.findOne({ where: { id } });
-    if (!p) throw new EntityNotFound('Product not found');
-    Object.assign(p, patch);
-    return this.products.save(p);
-  }
-
-  async getById(id: string): Promise<InventoryProductOrmEntity> {
-    const p = await this.products.findOne({ where: { id } });
-    if (!p) throw new EntityNotFound('Product not found');
-    return p;
+  async getById(id: string): Promise<InventoryProductDocument> {
+    const doc = await this.products.findOne({ _id: id });
+    if (!doc) throw new EntityNotFound('Product not found');
+    return doc;
   }
 
   async list(input: {
     page: number;
     limit: number;
     search?: string;
-  }): Promise<Page<InventoryProductOrmEntity>> {
-    const qb = this.products
-      .createQueryBuilder('p')
-      .orderBy('p.name', 'ASC')
-      .skip((input.page - 1) * input.limit)
-      .take(input.limit);
-    if (input.search)
-      qb.andWhere('(p.sku ILIKE :s OR p.name ILIKE :s)', { s: `%${input.search}%` });
-    const [items, total] = await qb.getManyAndCount();
+  }): Promise<Page<InventoryProductDocument>> {
+    const query: Record<string, unknown> = {};
+    if (input.search) {
+      query['$or'] = [
+        { sku: { $regex: input.search, $options: 'i' } },
+        { name: { $regex: input.search, $options: 'i' } },
+      ];
+    }
+    const skip = (input.page - 1) * input.limit;
+    const [items, total] = await Promise.all([
+      this.products.find(query).sort({ name: 1 }).skip(skip).limit(input.limit),
+      this.products.countDocuments(query),
+    ]);
     return buildPage(items, total, input.page, input.limit);
   }
 
-  async listLowStock(): Promise<InventoryProductOrmEntity[]> {
+  async listLowStock(): Promise<InventoryProductDocument[]> {
     return this.products
-      .find({
-        where: { active: true, stock: LessThanOrEqual(0) }, // overridden below
-      })
-      .then(async () => {
-        // raw query because we need column-to-column comparison
-        return this.products
-          .createQueryBuilder('p')
-          .where('p.active = true AND p.stock <= p.min_stock')
-          .orderBy('p.stock', 'ASC')
-          .getMany();
-      });
+      .find({ active: true, $expr: { $lte: ['$stock', '$minStock'] } })
+      .sort({ stock: 1 });
   }
 
   async registerIn(productId: string, qty: number, reason?: string): Promise<void> {
-    await this.ds.transaction((em) => this.domain.increment(em, { productId, qty, reason }));
+    await this.domain.increment({ productId, qty, reason });
   }
 
   async registerOut(productId: string, qty: number, reason?: string): Promise<void> {
-    await this.ds.transaction((em) => this.domain.decrement(em, { productId, qty, reason }));
+    await this.domain.decrement({ productId, qty, reason });
   }
 
   async adjust(productId: string, newStock: number, reason?: string): Promise<void> {
-    await this.ds.transaction((em) => this.domain.adjust(em, productId, newStock, reason));
+    await this.domain.adjust(productId, newStock, reason);
   }
 }

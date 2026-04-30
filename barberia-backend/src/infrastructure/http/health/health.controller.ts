@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import {
   HealthCheck,
   HealthCheckService,
-  TypeOrmHealthIndicator,
+  MongooseHealthIndicator,
   MemoryHealthIndicator,
 } from '@nestjs/terminus';
 import { ApiTags } from '@nestjs/swagger';
@@ -13,7 +13,7 @@ import { Public } from '@core/decorators/roles.decorator';
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
+    private readonly db: MongooseHealthIndicator,
     private readonly memory: MemoryHealthIndicator,
   ) {}
 

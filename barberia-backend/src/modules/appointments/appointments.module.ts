@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppointmentOrmEntity } from './infrastructure/persistence/appointment.orm-entity';
-import { AppointmentItemOrmEntity } from './infrastructure/persistence/appointment-item.orm-entity';
-import { CustomerOrmEntity } from '@modules/customers/infrastructure/persistence/customer.orm-entity';
-import { BarberOrmEntity } from '@modules/barbers/infrastructure/persistence/barber.orm-entity';
-import { BarberBlockOrmEntity } from '@modules/barbers/infrastructure/persistence/barber-block.orm-entity';
-import { ServiceOrmEntity } from '@modules/services/infrastructure/persistence/service.orm-entity';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AppointmentDoc, AppointmentSchema } from './infrastructure/persistence/appointment.schema';
+import { CustomerDoc, CustomerSchema } from '@modules/customers/infrastructure/persistence/customer.schema';
+import { BarberDoc, BarberSchema } from '@modules/barbers/infrastructure/persistence/barber.schema';
+import { BarberBlockDoc, BarberBlockSchema } from '@modules/barbers/infrastructure/persistence/barber-block.schema';
+import { ServiceDoc, ServiceSchema } from '@modules/services/infrastructure/persistence/service.schema';
 import { BookAppointmentUseCase } from './application/book-appointment.use-case';
 import { CancelAppointmentUseCase } from './application/cancel-appointment.use-case';
 import { TransitionAppointmentUseCase } from './application/transition-appointment.use-case';
@@ -15,13 +14,12 @@ import { AppointmentsController } from './presentation/appointments.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      AppointmentOrmEntity,
-      AppointmentItemOrmEntity,
-      CustomerOrmEntity,
-      BarberOrmEntity,
-      BarberBlockOrmEntity,
-      ServiceOrmEntity,
+    MongooseModule.forFeature([
+      { name: AppointmentDoc.name, schema: AppointmentSchema },
+      { name: CustomerDoc.name, schema: CustomerSchema },
+      { name: BarberDoc.name, schema: BarberSchema },
+      { name: BarberBlockDoc.name, schema: BarberBlockSchema },
+      { name: ServiceDoc.name, schema: ServiceSchema },
     ]),
   ],
   controllers: [AppointmentsController],
@@ -32,6 +30,6 @@ import { AppointmentsController } from './presentation/appointments.controller';
     ListAppointmentsUseCase,
     GetAvailabilityUseCase,
   ],
-  exports: [TypeOrmModule],
+  exports: [MongooseModule],
 })
 export class AppointmentsModule {}

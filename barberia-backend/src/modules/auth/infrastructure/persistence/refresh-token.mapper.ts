@@ -1,28 +1,28 @@
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { RefreshToken } from '../../domain/entities/refresh-token.entity';
-import { RefreshTokenOrmEntity } from './refresh-token.orm-entity';
+import { RefreshTokenDocument } from './refresh-token.schema';
 
 export class RefreshTokenMapper {
-  static toDomain(orm: RefreshTokenOrmEntity): RefreshToken {
+  static toDomain(doc: RefreshTokenDocument): RefreshToken {
     return RefreshToken.rehydrate(
       {
-        userId: new UniqueEntityId(orm.userId),
-        tokenHash: orm.tokenHash,
-        expiresAt: orm.expiresAt,
-        revokedAt: orm.revokedAt,
-        createdAt: orm.createdAt,
+        userId: new UniqueEntityId(doc.userId),
+        tokenHash: doc.tokenHash,
+        expiresAt: doc.expiresAt,
+        revokedAt: doc.revokedAt,
+        createdAt: doc.createdAt,
       },
-      new UniqueEntityId(orm.id),
+      new UniqueEntityId(doc._id),
     );
   }
 
-  static toOrm(domain: RefreshToken): RefreshTokenOrmEntity {
-    const orm = new RefreshTokenOrmEntity();
-    orm.id = domain.id.value;
-    orm.userId = domain.userId.value;
-    orm.tokenHash = domain.tokenHash;
-    orm.expiresAt = domain.expiresAt;
-    orm.revokedAt = domain.revokedAt ?? null;
-    return orm;
+  static toDoc(domain: RefreshToken): Record<string, unknown> {
+    return {
+      _id: domain.id.value,
+      userId: domain.userId.value,
+      tokenHash: domain.tokenHash,
+      expiresAt: domain.expiresAt,
+      revokedAt: domain.revokedAt ?? null,
+    };
   }
 }

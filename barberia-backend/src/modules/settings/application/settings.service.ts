@@ -1,31 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import { requestContext } from '@core/context/request-context';
-import { SettingOrmEntity } from '../infrastructure/setting.orm-entity';
+import { SettingDoc, SettingDocument } from '../infrastructure/setting.schema';
 
 @Injectable()
 export class SettingsService {
-  constructor(
-    @InjectRepository(SettingOrmEntity) private readonly repo: Repository<SettingOrmEntity>,
-  ) {}
+  constructor(@InjectModel(SettingDoc.name) private readonly model: Model<SettingDocument>) {}
 
-  async getAll(): Promise<SettingOrmEntity[]> {
-    return this.repo.find({ order: { key: 'ASC' } });
+  getAll(): Promise<SettingDocument[]> {
+    return this.model.find().sort({ key: 1 });
   }
 
-  async getOne(key: string): Promise<SettingOrmEntity | null> {
-    return this.repo.findOne({ where: { key } });
+  getOne(key: string): Promise<SettingDocument | null> {
+    return this.model.findOne({ key });
   }
 
-  async upsert(key: string, value: unknown): Promise<SettingOrmEntity> {
+  async upsert(key: string, value: unknown): Promise<SettingDocument> {
     const ctx = requestContext.get();
-    const existing = await this.repo.findOne({ where: { key } });
-    const entity = existing ?? new SettingOrmEntity();
-    entity.key = key;
-    entity.value = value as SettingOrmEntity['value'];
-    entity.updatedBy = ctx?.userId ?? null;
-    await this.repo.save(entity);
-    return entity;
+    const doc = await this.model.findOneAndUpdate(
+      { key },
+      {
+        $set: { value, updatedBy: ctx?.userId ?? null, updatedAt: new Date() },
+        $setOnInsert: { _id: uuidv4(), key },
+      },
+      { upsert: true, new: true },
+    );
+    return doc!;
   }
 }

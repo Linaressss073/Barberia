@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AppointmentOrmEntity } from '../infrastructure/persistence/appointment.orm-entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persistence/appointment.schema';
 import { Page, buildPage } from '@shared/pagination/pagination.dto';
 
 export interface ListAppointmentsInput {
@@ -16,25 +16,24 @@ export interface ListAppointmentsInput {
 
 @Injectable()
 export class ListAppointmentsUseCase {
-  constructor(
-    @InjectRepository(AppointmentOrmEntity)
-    private readonly repo: Repository<AppointmentOrmEntity>,
-  ) {}
+  constructor(@InjectModel(AppointmentDoc.name) private readonly repo: Model<AppointmentDocument>) {}
 
-  async execute(input: ListAppointmentsInput): Promise<Page<AppointmentOrmEntity>> {
-    const qb = this.repo
-      .createQueryBuilder('a')
-      .leftJoinAndSelect('a.items', 'i')
-      .orderBy('a.scheduled_at', 'DESC')
-      .skip((input.page - 1) * input.limit)
-      .take(input.limit);
-    if (input.barberId) qb.andWhere('a.barber_id = :b', { b: input.barberId });
-    if (input.customerId) qb.andWhere('a.customer_id = :c', { c: input.customerId });
-    if (input.status) qb.andWhere('a.status = :s', { s: input.status });
-    if (input.from) qb.andWhere('a.scheduled_at >= :f', { f: input.from });
-    if (input.to) qb.andWhere('a.scheduled_at < :t', { t: input.to });
-
-    const [items, total] = await qb.getManyAndCount();
+  async execute(input: ListAppointmentsInput): Promise<Page<AppointmentDocument>> {
+    const query: Record<string, unknown> = {};
+    if (input.barberId) query['barberId'] = input.barberId;
+    if (input.customerId) query['customerId'] = input.customerId;
+    if (input.status) query['status'] = input.status;
+    if (input.from || input.to) {
+      query['scheduledAt'] = {
+        ...(input.from ? { $gte: input.from } : {}),
+        ...(input.to ? { $lt: input.to } : {}),
+      };
+    }
+    const skip = (input.page - 1) * input.limit;
+    const [items, total] = await Promise.all([
+      this.repo.find(query).sort({ scheduledAt: -1 }).skip(skip).limit(input.limit),
+      this.repo.countDocuments(query),
+    ]);
     return buildPage(items, total, input.page, input.limit);
   }
 }

@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { EntityNotFound } from '@core/exceptions/domain.exception';
-import { AppointmentOrmEntity } from '../infrastructure/persistence/appointment.orm-entity';
-import { BarberOrmEntity } from '@modules/barbers/infrastructure/persistence/barber.orm-entity';
-import { BarberBlockOrmEntity } from '@modules/barbers/infrastructure/persistence/barber-block.orm-entity';
+import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persistence/appointment.schema';
+import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
+import { BarberBlockDoc, BarberBlockDocument } from '@modules/barbers/infrastructure/persistence/barber-block.schema';
 
 export interface AvailabilitySlot {
-  startsAt: string; // ISO
+  startsAt: string;
   endsAt: string;
 }
 
@@ -16,12 +16,9 @@ const SLOT_MINUTES = 30;
 @Injectable()
 export class GetAvailabilityUseCase {
   constructor(
-    @InjectRepository(AppointmentOrmEntity)
-    private readonly appts: Repository<AppointmentOrmEntity>,
-    @InjectRepository(BarberOrmEntity)
-    private readonly barbers: Repository<BarberOrmEntity>,
-    @InjectRepository(BarberBlockOrmEntity)
-    private readonly blocks: Repository<BarberBlockOrmEntity>,
+    @InjectModel(AppointmentDoc.name) private readonly appts: Model<AppointmentDocument>,
+    @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
+    @InjectModel(BarberBlockDoc.name) private readonly blocks: Model<BarberBlockDocument>,
   ) {}
 
   async execute(input: {
@@ -29,10 +26,7 @@ export class GetAvailabilityUseCase {
     date: Date;
     durationMin: number;
   }): Promise<AvailabilitySlot[]> {
-    const barber = await this.barbers.findOne({
-      where: { id: input.barberId },
-      relations: { schedules: true },
-    });
+    const barber = await this.barbers.findOne({ _id: input.barberId });
     if (!barber) throw new EntityNotFound('Barber not found');
     if (!barber.active) return [];
 
@@ -44,31 +38,31 @@ export class GetAvailabilityUseCase {
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
-    const [appts, blocks] = await Promise.all([
-      this.appts
-        .createQueryBuilder('a')
-        .where('a.barber_id = :id', { id: input.barberId })
-        .andWhere("a.status NOT IN ('CANCELLED','NO_SHOW')")
-        .andWhere('a.scheduled_at < :end AND a.ends_at > :start', { start: dayStart, end: dayEnd })
-        .getMany(),
-      this.blocks
-        .createQueryBuilder('b')
-        .where('b.barber_id = :id', { id: input.barberId })
-        .andWhere('b.starts_at < :end AND b.ends_at > :start', { start: dayStart, end: dayEnd })
-        .getMany(),
+    const [apptList, blockList] = await Promise.all([
+      this.appts.find({
+        barberId: input.barberId,
+        status: { $nin: ['CANCELLED', 'NO_SHOW'] },
+        scheduledAt: { $lt: dayEnd },
+        endsAt: { $gt: dayStart },
+      }),
+      this.blocks.find({
+        barberId: input.barberId,
+        startsAt: { $lt: dayEnd },
+        endsAt: { $gt: dayStart },
+      }),
     ]);
 
     const occupied: Array<[Date, Date]> = [
-      ...appts.map((a) => [a.scheduledAt, a.endsAt] as [Date, Date]),
-      ...blocks.map((b) => [b.startsAt, b.endsAt] as [Date, Date]),
+      ...apptList.map((a) => [a.scheduledAt, a.endsAt] as [Date, Date]),
+      ...blockList.map((b) => [b.startsAt, b.endsAt] as [Date, Date]),
     ];
 
     const [sh, sm] = slot.startTime.split(':').map(Number);
-    const [eh, em] = slot.endTime.split(':').map(Number);
+    const [eh, em_] = slot.endTime.split(':').map(Number);
     const workStart = new Date(dayStart);
     workStart.setHours(sh, sm, 0, 0);
     const workEnd = new Date(dayStart);
-    workEnd.setHours(eh, em, 0, 0);
+    workEnd.setHours(eh, em_, 0, 0);
 
     const slots: AvailabilitySlot[] = [];
     for (
@@ -78,7 +72,7 @@ export class GetAvailabilityUseCase {
     ) {
       const startsAt = new Date(cursor);
       const endsAt = new Date(cursor + input.durationMin * 60_000);
-      if (startsAt.getTime() <= Date.now()) continue; // sólo a futuro
+      if (startsAt.getTime() <= Date.now()) continue;
       const overlaps = occupied.some(([s, e]) => startsAt < e && endsAt > s);
       if (!overlaps) slots.push({ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() });
     }

@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ServiceOrmEntity } from './infrastructure/persistence/service.orm-entity';
-import { ServicePromotionOrmEntity } from './infrastructure/persistence/service-promotion.orm-entity';
-import { TypeOrmServiceRepository } from './infrastructure/persistence/typeorm-service.repository';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ServiceDoc, ServiceSchema } from './infrastructure/persistence/service.schema';
+import { MongoServiceRepository } from './infrastructure/persistence/typeorm-service.repository';
 import { SERVICE_REPOSITORY } from './domain/repositories/service.repository';
 import {
   AddPromotionUseCase,
@@ -14,16 +13,16 @@ import {
 import { ServicesController } from './presentation/controllers/services.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ServiceOrmEntity, ServicePromotionOrmEntity])],
+  imports: [MongooseModule.forFeature([{ name: ServiceDoc.name, schema: ServiceSchema }])],
   controllers: [ServicesController],
   providers: [
-    { provide: SERVICE_REPOSITORY, useClass: TypeOrmServiceRepository },
+    { provide: SERVICE_REPOSITORY, useClass: MongoServiceRepository },
     CreateServiceUseCase,
     UpdateServiceUseCase,
     GetServiceUseCase,
     ListServicesUseCase,
     AddPromotionUseCase,
   ],
-  exports: [SERVICE_REPOSITORY],
+  exports: [SERVICE_REPOSITORY, MongooseModule],
 })
 export class ServicesModule {}

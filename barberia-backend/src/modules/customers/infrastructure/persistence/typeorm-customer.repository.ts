@@ -1,56 +1,54 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
-import {
-  CustomerListFilter,
-  CustomerRepository,
-} from '../../domain/repositories/customer.repository';
+import { CustomerListFilter, CustomerRepository } from '../../domain/repositories/customer.repository';
 import { Customer } from '../../domain/entities/customer.entity';
-import { CustomerOrmEntity } from './customer.orm-entity';
+import { CustomerDoc, CustomerDocument } from './customer.schema';
 import { CustomerMapper } from './customer.mapper';
 
 @Injectable()
-export class TypeOrmCustomerRepository implements CustomerRepository {
-  constructor(
-    @InjectRepository(CustomerOrmEntity) private readonly repo: Repository<CustomerOrmEntity>,
-  ) {}
+export class MongoCustomerRepository implements CustomerRepository {
+  constructor(@InjectModel(CustomerDoc.name) private readonly model: Model<CustomerDocument>) {}
 
   async findById(id: UniqueEntityId): Promise<Customer | null> {
-    const row = await this.repo.findOne({ where: { id: id.value } });
-    return row ? CustomerMapper.toDomain(row) : null;
+    const doc = await this.model.findOne({ _id: id.value, deletedAt: null });
+    return doc ? CustomerMapper.toDomain(doc) : null;
   }
 
   async findByDocument(document: string): Promise<Customer | null> {
-    const row = await this.repo.findOne({ where: { document } });
-    return row ? CustomerMapper.toDomain(row) : null;
+    const doc = await this.model.findOne({ document, deletedAt: null });
+    return doc ? CustomerMapper.toDomain(doc) : null;
   }
 
   async findByUserId(userId: UniqueEntityId): Promise<Customer | null> {
-    const row = await this.repo.findOne({ where: { userId: userId.value } });
-    return row ? CustomerMapper.toDomain(row) : null;
+    const doc = await this.model.findOne({ userId: userId.value, deletedAt: null });
+    return doc ? CustomerMapper.toDomain(doc) : null;
   }
 
   async save(customer: Customer): Promise<void> {
-    await this.repo.save(CustomerMapper.toOrm(customer));
+    const data = CustomerMapper.toDoc(customer);
+    await this.model.findOneAndUpdate({ _id: data._id }, { $set: data }, { upsert: true });
   }
 
   async paginate(filter: CustomerListFilter): Promise<{ items: Customer[]; total: number }> {
-    const qb = this.repo
-      .createQueryBuilder('c')
-      .orderBy('c.created_at', 'DESC')
-      .skip((filter.page - 1) * filter.limit)
-      .take(filter.limit);
+    const query: Record<string, unknown> = { deletedAt: null };
     if (filter.search) {
-      qb.andWhere('(c.full_name ILIKE :s OR c.document ILIKE :s OR c.phone ILIKE :s)', {
-        s: `%${filter.search}%`,
-      });
+      query['$or'] = [
+        { fullName: { $regex: filter.search, $options: 'i' } },
+        { document: { $regex: filter.search, $options: 'i' } },
+        { phone: { $regex: filter.search, $options: 'i' } },
+      ];
     }
-    const [rows, total] = await qb.getManyAndCount();
-    return { items: rows.map(CustomerMapper.toDomain), total };
+    const skip = (filter.page - 1) * filter.limit;
+    const [docs, total] = await Promise.all([
+      this.model.find(query).sort({ createdAt: -1 }).skip(skip).limit(filter.limit),
+      this.model.countDocuments(query),
+    ]);
+    return { items: docs.map(CustomerMapper.toDomain), total };
   }
 
   async softDelete(id: UniqueEntityId): Promise<void> {
-    await this.repo.softDelete({ id: id.value });
+    await this.model.findOneAndUpdate({ _id: id.value }, { $set: { deletedAt: new Date() } });
   }
 }

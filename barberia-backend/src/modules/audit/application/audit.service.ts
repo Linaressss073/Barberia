@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import { requestContext } from '@core/context/request-context';
-import { AuditLogOrmEntity } from '../infrastructure/persistence/audit-log.orm-entity';
+import { AuditLogDoc, AuditLogDocument } from '../infrastructure/persistence/audit-log.schema';
 
 export interface AuditEntry {
   action: string;
@@ -17,24 +18,24 @@ export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
   constructor(
-    @InjectRepository(AuditLogOrmEntity)
-    private readonly repo: Repository<AuditLogOrmEntity>,
+    @InjectModel(AuditLogDoc.name) private readonly model: Model<AuditLogDocument>,
   ) {}
 
   async record(entry: AuditEntry): Promise<void> {
     const ctx = requestContext.get();
     try {
-      const log = new AuditLogOrmEntity();
-      log.userId = ctx?.userId ?? null;
-      log.action = entry.action.slice(0, 64);
-      log.entity = entry.entity.slice(0, 64);
-      log.entityId = entry.entityId ?? null;
-      log.before = this.normalize(entry.before);
-      log.after = this.normalize(entry.after);
-      log.ip = ctx?.ip ?? null;
-      log.userAgent = ctx?.userAgent ?? null;
-      log.requestId = ctx?.requestId ?? null;
-      await this.repo.save(log);
+      await this.model.create({
+        _id: uuidv4(),
+        userId: ctx?.userId ?? null,
+        action: entry.action.slice(0, 64),
+        entity: entry.entity.slice(0, 64),
+        entityId: entry.entityId ?? null,
+        before: this.normalize(entry.before),
+        after: this.normalize(entry.after),
+        ip: ctx?.ip ?? null,
+        userAgent: ctx?.userAgent ?? null,
+        requestId: ctx?.requestId ?? null,
+      });
     } catch (err) {
       this.logger.error('Failed to write audit log', err as Error);
     }

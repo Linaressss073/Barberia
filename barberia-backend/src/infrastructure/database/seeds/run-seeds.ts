@@ -1,41 +1,44 @@
 import 'reflect-metadata';
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
-import dataSource from '../data-source';
+import * as mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
-/**
- * Seed mínimo: crea (si no existe) un usuario administrador.
- * Idempotente: usar varias veces sin duplicar.
- *
- * Uso:
- *   ADMIN_EMAIL=admin@barberia.com ADMIN_PASSWORD=Admin123! npm run seed:run
- */
 async function main(): Promise<void> {
+  const uri = process.env.DATABASE_URL ?? '';
   const email = process.env.ADMIN_EMAIL ?? 'admin@barberia.com';
   const password = process.env.ADMIN_PASSWORD ?? 'Admin12345';
   const fullName = process.env.ADMIN_NAME ?? 'Administrador';
   const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS ?? '12', 10);
 
-  await dataSource.initialize();
+  await mongoose.connect(uri);
   try {
-    const exists = await dataSource.query(`SELECT 1 FROM users WHERE email = $1 LIMIT 1`, [email]);
-    if (exists.length > 0) {
+    const db = mongoose.connection.db!;
+    const existing = await db.collection('users').findOne({ email });
+    if (existing) {
       // eslint-disable-next-line no-console
       console.log(`[seed] Admin already exists: ${email}`);
       return;
     }
     const hash = await bcrypt.hash(password, rounds);
-    await dataSource.query(
-      `INSERT INTO users (email, full_name, password_hash, status, roles)
-       VALUES ($1, $2, $3, 'ACTIVE', ARRAY['ADMIN'])`,
-      [email, fullName, hash],
-    );
+    await db.collection('users').insertOne({
+      _id: uuidv4() as unknown as mongoose.Types.ObjectId,
+      email,
+      fullName,
+      passwordHash: hash,
+      status: 'ACTIVE',
+      roles: ['ADMIN'],
+      lastLoginAt: null,
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
     // eslint-disable-next-line no-console
-    console.log(`[seed] Admin created: ${email} (password from env or default)`);
+    console.log(`[seed] Admin created: ${email}`);
   } finally {
-    await dataSource.destroy();
+    await mongoose.disconnect();
   }
 }
 

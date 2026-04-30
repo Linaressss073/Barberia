@@ -1,95 +1,93 @@
 import { Injectable } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { ClientSession, Model } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 import { BusinessRuleViolation, EntityNotFound } from '@core/exceptions/domain.exception';
 import { requestContext } from '@core/context/request-context';
-import { InventoryProductOrmEntity } from '../infrastructure/persistence/inventory-product.orm-entity';
 import {
-  InventoryMovementOrmEntity,
+  InventoryProductDoc,
+  InventoryProductDocument,
+} from '../infrastructure/persistence/inventory-product.schema';
+import {
+  InventoryMovementDoc,
+  InventoryMovementDocument,
   MovementType,
-} from '../infrastructure/persistence/inventory-movement.orm-entity';
+} from '../infrastructure/persistence/inventory-movement.schema';
 
 export interface StockAdjustment {
   productId: string;
-  qty: number; // positivo siempre; el signo lo da `type`
+  qty: number;
   reason?: string;
   refType?: string;
   refId?: string;
 }
 
-/**
- * Servicio de dominio para mutaciones de stock.
- * Diseñado para ejecutarse opcionalmente dentro de un EntityManager transaccional
- * (necesario cuando una venta debe descontar stock atómicamente).
- *
- * Garantiza:
- *  - decremento atómico con UPDATE ... WHERE stock >= :qty (no negativo).
- *  - registro de movimiento auditable.
- */
 @Injectable()
 export class InventoryDomainService {
-  /**
-   * Decrementa stock atómicamente. Si stock insuficiente, lanza.
-   */
-  async decrement(em: EntityManager, adj: StockAdjustment): Promise<void> {
-    if (adj.qty <= 0) throw new Error('qty must be > 0');
-    const result = await em
-      .createQueryBuilder()
-      .update(InventoryProductOrmEntity)
-      .set({ stock: () => `stock - ${adj.qty}` })
-      .where('id = :id AND stock >= :qty AND deleted_at IS NULL', {
-        id: adj.productId,
-        qty: adj.qty,
-      })
-      .execute();
+  constructor(
+    @InjectModel(InventoryProductDoc.name)
+    private readonly products: Model<InventoryProductDocument>,
+    @InjectModel(InventoryMovementDoc.name)
+    private readonly movements: Model<InventoryMovementDocument>,
+  ) {}
 
-    if (!result.affected) {
-      const exists = await em.findOne(InventoryProductOrmEntity, { where: { id: adj.productId } });
+  async decrement(adj: StockAdjustment, session?: ClientSession): Promise<void> {
+    if (adj.qty <= 0) throw new Error('qty must be > 0');
+    const opts = session ? { session } : {};
+    const result = await this.products.findOneAndUpdate(
+      { _id: adj.productId, stock: { $gte: adj.qty }, deletedAt: null },
+      { $inc: { stock: -adj.qty } },
+      { ...opts, new: true },
+    );
+    if (!result) {
+      const exists = await this.products.findOne({ _id: adj.productId });
       if (!exists) throw new EntityNotFound('Product not found');
       throw new BusinessRuleViolation('Insufficient stock', {
         productId: adj.productId,
         requested: adj.qty,
       });
     }
-    await this.recordMovement(em, 'OUT', adj);
+    await this.recordMovement('OUT', adj, session);
   }
 
-  async increment(em: EntityManager, adj: StockAdjustment): Promise<void> {
+  async increment(adj: StockAdjustment, session?: ClientSession): Promise<void> {
     if (adj.qty <= 0) throw new Error('qty must be > 0');
-    const result = await em
-      .createQueryBuilder()
-      .update(InventoryProductOrmEntity)
-      .set({ stock: () => `stock + ${adj.qty}` })
-      .where('id = :id AND deleted_at IS NULL', { id: adj.productId })
-      .execute();
-    if (!result.affected) throw new EntityNotFound('Product not found');
-    await this.recordMovement(em, 'IN', adj);
+    const opts = session ? { session } : {};
+    const result = await this.products.findOneAndUpdate(
+      { _id: adj.productId, deletedAt: null },
+      { $inc: { stock: adj.qty } },
+      { ...opts, new: true },
+    );
+    if (!result) throw new EntityNotFound('Product not found');
+    await this.recordMovement('IN', adj, session);
   }
 
-  async adjust(
-    em: EntityManager,
-    productId: string,
-    newStock: number,
-    reason?: string,
-  ): Promise<void> {
+  async adjust(productId: string, newStock: number, reason?: string, session?: ClientSession): Promise<void> {
     if (newStock < 0) throw new BusinessRuleViolation('Stock cannot be negative');
-    const before = await em.findOne(InventoryProductOrmEntity, { where: { id: productId } });
+    const opts = session ? { session } : {};
+    const before = await this.products.findOne({ _id: productId });
     if (!before) throw new EntityNotFound('Product not found');
     const delta = newStock - before.stock;
-    await em.update(InventoryProductOrmEntity, { id: productId }, { stock: newStock });
-    await this.recordMovement(em, 'ADJUST', {
-      productId,
-      qty: Math.abs(delta),
-      reason: reason ?? `Adjusted from ${before.stock} to ${newStock}`,
-    });
+    await this.products.findOneAndUpdate({ _id: productId }, { $set: { stock: newStock } }, opts);
+    await this.recordMovement(
+      'ADJUST',
+      {
+        productId,
+        qty: Math.abs(delta),
+        reason: reason ?? `Adjusted from ${before.stock} to ${newStock}`,
+      },
+      session,
+    );
   }
 
   private async recordMovement(
-    em: EntityManager,
     type: MovementType,
     adj: StockAdjustment,
+    session?: ClientSession,
   ): Promise<void> {
     const ctx = requestContext.get();
-    await em.insert(InventoryMovementOrmEntity, {
+    const doc = {
+      _id: uuidv4(),
       productId: adj.productId,
       type,
       qty: adj.qty,
@@ -97,6 +95,11 @@ export class InventoryDomainService {
       refType: adj.refType ?? null,
       refId: adj.refId ?? null,
       createdBy: ctx?.userId ?? null,
-    });
+    };
+    if (session) {
+      await this.movements.create([doc], { session });
+    } else {
+      await this.movements.create(doc);
+    }
   }
 }

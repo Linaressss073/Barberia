@@ -1,12 +1,12 @@
 import { Global, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuditLogOrmEntity } from './infrastructure/persistence/audit-log.orm-entity';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AuditLogDoc, AuditLogSchema } from './infrastructure/persistence/audit-log.schema';
 import { AuditService } from './application/audit.service';
 import { AuditInterceptor } from './application/audit.interceptor';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([AuditLogOrmEntity])],
+  imports: [MongooseModule.forFeature([{ name: AuditLogDoc.name, schema: AuditLogSchema }])],
   providers: [AuditService, AuditInterceptor],
   exports: [AuditService, AuditInterceptor],
 })

@@ -5,7 +5,7 @@ import { Role, Roles } from '@core/decorators/roles.decorator';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '@modules/auth/presentation/guards/roles.guard';
 import { NotificationsService } from '../application/notifications.service';
-import { Channel } from '../infrastructure/notification-log.orm-entity';
+import { Channel } from '../infrastructure/notification-log.schema';
 
 class SendNotificationDto {
   @ApiProperty({ enum: ['EMAIL', 'WHATSAPP', 'SMS'] })

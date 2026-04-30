@@ -1,69 +1,70 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import { MembershipRepository } from '../../domain/membership.repository';
 import { Membership } from '../../domain/membership';
-import { MembershipOrmEntity } from './membership.orm-entity';
+import { MembershipDoc, MembershipDocument } from './membership.schema';
 
-function toDomain(o: MembershipOrmEntity): Membership {
+function toDomain(doc: MembershipDocument): Membership {
   return Membership.rehydrate(
     {
-      customerId: new UniqueEntityId(o.customerId),
-      plan: o.plan,
-      startsAt: o.startsAt,
-      endsAt: o.endsAt,
-      discountPct: parseFloat(o.discountPct),
-      active: o.active,
-      createdAt: o.createdAt,
+      customerId: new UniqueEntityId(doc.customerId),
+      plan: doc.plan,
+      startsAt: doc.startsAt,
+      endsAt: doc.endsAt,
+      discountPct: parseFloat(doc.discountPct),
+      active: doc.active,
+      createdAt: doc.createdAt,
     },
-    new UniqueEntityId(o.id),
+    new UniqueEntityId(doc._id),
   );
 }
 
-function toOrm(m: Membership): MembershipOrmEntity {
-  const o = new MembershipOrmEntity();
-  o.id = m.id.value;
-  o.customerId = m.customerId.value;
-  o.plan = m.plan;
-  o.startsAt = m.startsAt;
-  o.endsAt = m.endsAt;
-  o.discountPct = m.discountPct.toFixed(2);
-  o.active = m.active;
-  o.createdAt = m.createdAt;
-  return o;
-}
-
 @Injectable()
-export class TypeOrmMembershipRepository implements MembershipRepository {
-  constructor(
-    @InjectRepository(MembershipOrmEntity) private readonly repo: Repository<MembershipOrmEntity>,
-  ) {}
+export class MongoMembershipRepository implements MembershipRepository {
+  constructor(@InjectModel(MembershipDoc.name) private readonly model: Model<MembershipDocument>) {}
 
   async findById(id: UniqueEntityId): Promise<Membership | null> {
-    const r = await this.repo.findOne({ where: { id: id.value } });
-    return r ? toDomain(r) : null;
+    const doc = await this.model.findOne({ _id: id.value });
+    return doc ? toDomain(doc) : null;
   }
 
   async findActiveForCustomer(customerId: UniqueEntityId, at: Date): Promise<Membership | null> {
-    const r = await this.repo
-      .createQueryBuilder('m')
-      .where('m.customer_id = :id AND m.active = true', { id: customerId.value })
-      .andWhere('m.starts_at <= :at AND m.ends_at > :at', { at })
-      .orderBy('m.discount_pct', 'DESC')
-      .getOne();
-    return r ? toDomain(r) : null;
+    const doc = await this.model
+      .findOne({
+        customerId: customerId.value,
+        active: true,
+        startsAt: { $lte: at },
+        endsAt: { $gt: at },
+      })
+      .sort({ discountPct: -1 });
+    return doc ? toDomain(doc) : null;
   }
 
   async listByCustomer(customerId: UniqueEntityId): Promise<Membership[]> {
-    const rows = await this.repo.find({
-      where: { customerId: customerId.value },
-      order: { createdAt: 'DESC' },
-    });
-    return rows.map(toDomain);
+    const docs = await this.model
+      .find({ customerId: customerId.value })
+      .sort({ createdAt: -1 });
+    return docs.map(toDomain);
   }
 
   async save(m: Membership): Promise<void> {
-    await this.repo.save(toOrm(m));
+    await this.model.findOneAndUpdate(
+      { _id: m.id.value },
+      {
+        $set: {
+          _id: m.id.value,
+          customerId: m.customerId.value,
+          plan: m.plan,
+          startsAt: m.startsAt,
+          endsAt: m.endsAt,
+          discountPct: m.discountPct.toFixed(2),
+          active: m.active,
+          createdAt: m.createdAt,
+        },
+      },
+      { upsert: true },
+    );
   }
 }

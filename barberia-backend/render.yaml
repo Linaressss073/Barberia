@@ -1,30 +1,17 @@
 # Infraestructura como código para Render.
-# Crea/actualiza el Web Service NestJS y la base PostgreSQL administrada.
+# NestJS + MongoDB Atlas (sin base de datos gestionada por Render).
 # Docs: https://render.com/docs/blueprint-spec
-
-databases:
-  - name: barberia-db
-    plan: free                # Cambiar a 'starter'/'standard' en PROD.
-    databaseName: barberia
-    user: barberia
-    postgresMajorVersion: 16
-    ipAllowList: []           # Solo accesible internamente desde Render.
 
 services:
   - type: web
     name: barberia-backend
     runtime: node
-    plan: free                # Cambiar a 'starter' en PROD.
+    plan: free
     region: oregon
     branch: main
     rootDir: barberia-backend
-    buildCommand: npm ci && npm run build
-    # NOTA: en free tier no se permite `preDeployCommand`. Las migraciones se
-    # ejecutan en el startCommand encadenadas con `&&`: si fallan, el proceso
-    # no arranca y Render marca el deploy como failed.
-    # Al subir a `starter` o superior, mover `npm run migration:run` a
-    # `preDeployCommand` para evitar downtime en migraciones rotas.
-    startCommand: npm run migration:run && node dist/main.js
+    buildCommand: npm install && npm run build
+    startCommand: node dist/main.js
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:
@@ -39,17 +26,9 @@ services:
       - key: GLOBAL_PREFIX
         value: api/v1
       - key: FRONTEND_URL
-        sync: false           # Configurar en dashboard según dominio del frontend.
+        sync: false           # Configurar en dashboard: URL de Vercel.
       - key: DATABASE_URL
-        fromDatabase:
-          name: barberia-db
-          property: connectionString
-      - key: DATABASE_SSL
-        value: true
-      - key: DATABASE_LOGGING
-        value: false
-      - key: DATABASE_POOL_MAX
-        value: 10
+        sync: false           # Configurar en dashboard: URI de MongoDB Atlas.
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_ACCESS_TTL

@@ -5,6 +5,7 @@ export interface RequestContext {
   userId?: string;
   userEmail?: string;
   userRoles?: string[];
+  tenantId?: string | null;
   ip?: string;
   userAgent?: string;
   startedAt: number;

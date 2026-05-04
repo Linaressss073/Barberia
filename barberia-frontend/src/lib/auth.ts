@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string;
   fullName: string;
   roles: string[];
+  tenantId?: string | null;
 }
 
 export const getAccessToken = (): string | null => localStorage.getItem(KEYS.access);

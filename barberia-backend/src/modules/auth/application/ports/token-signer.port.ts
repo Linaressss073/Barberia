@@ -6,6 +6,7 @@ export interface AccessTokenPayload {
   sub: string;
   email: string;
   roles: Role[];
+  tenantId?: string | null;
   jti: string;
 }
 

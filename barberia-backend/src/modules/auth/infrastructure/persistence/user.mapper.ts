@@ -14,6 +14,7 @@ export class UserMapper {
         password: HashedPassword.fromHash(doc.passwordHash),
         status: doc.status as UserStatus,
         roles: doc.roles as Role[],
+        tenantId: doc.tenantId ?? null,
         lastLoginAt: doc.lastLoginAt ?? undefined,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
@@ -30,6 +31,7 @@ export class UserMapper {
       passwordHash: domain.password.value,
       status: domain.status,
       roles: domain.roles,
+      tenantId: domain.tenantId,
       lastLoginAt: domain.lastLoginAt ?? null,
       deletedAt: null,
     };

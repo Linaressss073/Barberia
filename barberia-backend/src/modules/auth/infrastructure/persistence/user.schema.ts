@@ -26,6 +26,9 @@ export class UserDoc {
   @Prop({ type: Date, default: null })
   lastLoginAt!: Date | null;
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   @Prop({ type: Date, default: null })
   deletedAt!: Date | null;
 

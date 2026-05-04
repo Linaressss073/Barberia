@@ -12,6 +12,7 @@ interface JwtPayload {
   sub: string;
   email: string;
   roles: Role[];
+  tenantId?: string | null;
   jti: string;
   exp: number;
 }
@@ -40,12 +41,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       ctx.userId = payload.sub;
       ctx.userEmail = payload.email;
       ctx.userRoles = payload.roles ?? [];
+      ctx.tenantId = payload.tenantId ?? null;
     }
 
     return {
       sub: payload.sub,
       email: payload.email,
       roles: payload.roles ?? [],
+      tenantId: payload.tenantId ?? null,
       jti: payload.jti,
       exp: payload.exp,
     };

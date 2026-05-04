@@ -44,6 +44,7 @@ export class LoginUseCase {
       sub: user.id.value,
       email: user.email.value,
       roles: user.roles,
+      tenantId: user.tenantId,
     });
     const refreshJti = randomUUID();
     const refreshToken = await this.signer.signRefreshToken({
@@ -66,6 +67,7 @@ export class LoginUseCase {
         email: user.email.value,
         fullName: user.fullName,
         roles: user.roles,
+        tenantId: user.tenantId,
       },
       tokens: {
         accessToken: access.token,

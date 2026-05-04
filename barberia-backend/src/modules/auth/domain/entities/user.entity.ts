@@ -17,6 +17,7 @@ interface UserProps {
   password: HashedPassword;
   status: UserStatus;
   roles: Role[];
+  tenantId: string | null;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +39,7 @@ export class User extends AggregateRoot<UserProps> {
       password: HashedPassword;
       roles?: Role[];
       status?: UserStatus;
+      tenantId?: string | null;
     },
     id?: UniqueEntityId,
   ): User {
@@ -50,6 +52,7 @@ export class User extends AggregateRoot<UserProps> {
         password: params.password,
         status: params.status ?? UserStatus.Active,
         roles,
+        tenantId: params.tenantId ?? null,
         createdAt: now,
         updatedAt: now,
       },
@@ -76,6 +79,10 @@ export class User extends AggregateRoot<UserProps> {
   get roles(): Role[] {
     return [...this.props.roles];
   }
+  get tenantId(): string | null {
+    return this.props.tenantId;
+  }
+
   get lastLoginAt(): Date | undefined {
     return this.props.lastLoginAt;
   }

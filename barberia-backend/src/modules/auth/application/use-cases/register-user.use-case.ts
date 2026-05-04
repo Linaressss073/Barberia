@@ -11,12 +11,16 @@ import { RawPassword } from '../../domain/value-objects/raw-password.vo';
 import { USER_REPOSITORY, UserRepository } from '../../domain/repositories/user.repository';
 import { PASSWORD_HASHER, PasswordHasher } from '../ports/password-hasher.port';
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
+import { TenantDoc, TenantDocument, TenantPlan, PLAN_LIMITS } from '@modules/tenants/infrastructure/persistence/tenant.schema';
 
 export interface RegisterUserInput {
   email: string;
   fullName: string;
   password: string;
   roles?: Role[];
+  businessName?: string;
+  plan?: TenantPlan;
+  tenantId?: string;
 }
 
 @Injectable()
@@ -25,6 +29,7 @@ export class RegisterUserUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasher,
     @InjectModel(CustomerDoc.name) private readonly customerModel: Model<CustomerDocument>,
+    @InjectModel(TenantDoc.name) private readonly tenantModel: Model<TenantDocument>,
   ) {}
 
   async execute(input: RegisterUserInput): Promise<User> {
@@ -41,17 +46,46 @@ export class RegisterUserUseCase {
     }
 
     const hash = await this.hasher.hash(passwordRes.getValue().value);
-    const roles = input.roles && input.roles.length > 0 ? input.roles : [Role.Customer];
+
+    // Owner registration: businessName present → create tenant + ADMIN
+    const isOwnerRegistration = !!input.businessName;
+    let resolvedTenantId: string | null = input.tenantId ?? null;
+    let resolvedRoles: Role[];
+
+    if (isOwnerRegistration) {
+      const plan: TenantPlan = input.plan ?? 'TRIAL';
+      const name = input.businessName!.trim();
+      const slug = await this.uniqueSlug(name);
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      const tenantId = uuidv4();
+
+      await this.tenantModel.create({
+        _id: tenantId,
+        name,
+        slug,
+        plan,
+        trialEndsAt,
+        maxBarbers: PLAN_LIMITS[plan].maxBarbers,
+        active: true,
+      });
+
+      resolvedTenantId = tenantId;
+      resolvedRoles = [Role.Admin];
+    } else {
+      resolvedRoles = input.roles && input.roles.length > 0 ? input.roles : [Role.Customer];
+    }
+
     const user = User.create({
       email,
       fullName: input.fullName,
       password: HashedPassword.fromHash(hash),
-      roles,
+      roles: resolvedRoles,
+      tenantId: resolvedTenantId,
     });
 
     await this.users.save(user);
 
-    if (roles.includes(Role.Customer)) {
+    if (resolvedRoles.includes(Role.Customer)) {
       try {
         await this.customerModel.create({
           _id: uuidv4(),
@@ -69,5 +103,23 @@ export class RegisterUserUseCase {
     }
 
     return user;
+  }
+
+  private async uniqueSlug(name: string): Promise<string> {
+    const base = name
+      .toLowerCase()
+      .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e')
+      .replace(/[íìïî]/g, 'i').replace(/[óòöô]/g, 'o')
+      .replace(/[úùüû]/g, 'u').replace(/ñ/g, 'n').replace(/ç/g, 'c')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'barberia';
+
+    let slug = base;
+    let attempt = 0;
+    while (await this.tenantModel.exists({ slug })) {
+      attempt++;
+      slug = `${base}-${attempt}`;
+    }
+    return slug;
   }
 }

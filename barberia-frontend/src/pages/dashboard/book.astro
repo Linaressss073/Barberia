@@ -401,7 +401,11 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 
   document.getElementById("step4-back").addEventListener("click", () => goStep(3));
 
+  let isSubmitting = false;
   document.getElementById("btn-submit-book").addEventListener("click", async () => {
+    if (isSubmitting) return;
+    isSubmitting = true;
+
     let customerId = null;
     if (isCustomer) {
       try {
@@ -409,12 +413,14 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
         customerId = me.id;
       } catch {
         window.toast("No se pudo obtener el perfil de cliente", "error");
+        isSubmitting = false;
         return;
       }
     } else {
       customerId = document.getElementById("selected-customer-id").value;
       if (!customerId) {
         window.toast("Selecciona un cliente para la cita", "error");
+        isSubmitting = false;
         return;
       }
     }
@@ -439,6 +445,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       window.toast(err.message ?? "Error al reservar cita", "error");
       btn.disabled = false;
       btn.textContent = "Reservar Cita";
+      isSubmitting = false;
     }
   });
 

@@ -25,7 +25,7 @@ export class CancelAppointmentUseCase {
       throw new BusinessRuleViolation(`Cannot cancel appointment in status ${appt.status}`);
     }
     const msUntil = appt.scheduledAt.getTime() - Date.now();
-    if (!input.force && msUntil < MIN_CANCEL_LEAD_MS) {
+    if (!input.force && appt.status === 'CONFIRMED' && msUntil < MIN_CANCEL_LEAD_MS) {
       throw new BusinessRuleViolation('Cancellations require at least 2 hours notice', {
         minutesRemaining: Math.floor(msUntil / 60_000),
       });

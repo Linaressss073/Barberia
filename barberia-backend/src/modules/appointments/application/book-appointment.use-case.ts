@@ -51,6 +51,17 @@ export class BookAppointmentUseCase {
     let result: { id: string; endsAt: Date; totalCents: number };
     try {
       result = await session.withTransaction(async () => {
+        const duplicate = await this.appts.findOne({
+          customerId: input.customerId,
+          barberId: input.barberId,
+          scheduledAt: input.scheduledAt,
+          status: { $nin: ['CANCELLED', 'NO_SHOW'] },
+        }, null, { session });
+        if (duplicate) {
+          const totalCents = duplicate.items.reduce((s, i) => s + i.priceCents, 0);
+          return { id: duplicate._id as string, endsAt: duplicate.endsAt, totalCents };
+        }
+
         const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null }, null, { session });
         if (!customer) throw new EntityNotFound('Customer not found');
 

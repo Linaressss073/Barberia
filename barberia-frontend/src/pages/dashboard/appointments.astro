@@ -6,7 +6,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
   <div class="space-y-5">
     <!-- Header bar -->
     <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-      <div class="flex items-center gap-2">
+      <div id="day-navigator" class="flex items-center gap-2">
         <button id="btn-prev-day" class="p-2 rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 transition-colors">
           <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
@@ -22,8 +22,14 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       </div>
       <div class="flex items-center gap-2">
         <button id="btn-refresh" class="px-3 py-2 text-xs rounded-lg bg-base-800 text-base-400 hover:text-base-100 hover:bg-base-700 border border-base-700 transition-colors">Actualizar</button>
-        <a id="btn-new-appointment" href="/dashboard/book" class="hidden px-4 py-2 text-xs font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors">+ Nueva Cita</a>
+        <a id="btn-new-appointment" href="/dashboard/book" class="hidden px-4 py-2 text-xs font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors">+ Reservar Cita</a>
       </div>
+    </div>
+
+    <!-- Customer tabs (hidden for staff) -->
+    <div id="customer-tabs" class="hidden flex gap-1 bg-base-900 border border-base-800 rounded-xl p-1 w-fit">
+      <button id="tab-upcoming" class="tab-btn px-4 py-1.5 text-sm rounded-lg font-medium transition-colors bg-accent-900/40 text-accent-400 border border-accent-800/40" data-tab="upcoming">Próximas</button>
+      <button id="tab-history" class="tab-btn px-4 py-1.5 text-sm rounded-lg font-medium transition-colors text-base-400 hover:text-base-100" data-tab="history">Historial</button>
     </div>
 
     <!-- Appointments table -->
@@ -114,10 +120,26 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 
   if (isStaff) {
     document.getElementById("btn-new-appointment").classList.remove("hidden");
+  } else if (isCustomer) {
+    document.getElementById("day-navigator").classList.add("hidden");
+    document.getElementById("customer-tabs").classList.remove("hidden");
+    document.getElementById("btn-new-appointment").classList.remove("hidden");
   }
 
   let currentDate = new Date();
   currentDate.setHours(0,0,0,0);
+  let customerTab: "upcoming" | "history" = "upcoming";
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      customerTab = (btn as HTMLElement).dataset.tab as "upcoming" | "history";
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.className = "tab-btn px-4 py-1.5 text-sm rounded-lg font-medium transition-colors text-base-400 hover:text-base-100";
+      });
+      btn.className = "tab-btn px-4 py-1.5 text-sm rounded-lg font-medium transition-colors bg-accent-900/40 text-accent-400 border border-accent-800/40";
+      loadAppointments();
+    });
+  });
 
   const STATUS_BADGES = {
     BOOKED:    "bg-yellow-900/40 text-yellow-400 border border-yellow-800/40",
@@ -157,10 +179,11 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     try {
       let data;
       if (isCustomer) {
-        const now = new Date();
-        const from = now.toISOString();
-        const to = new Date(now.getTime() + 30*24*60*60*1000).toISOString();
-        data = await apiFetch(`/appointments?from=${from}&to=${to}&customerId=${user.id}&limit=50&page=1`);
+        const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+        const qs = customerTab === "upcoming"
+          ? `from=${startOfToday.toISOString()}`
+          : `to=${startOfToday.toISOString()}`;
+        data = await apiFetch(`/appointments?${qs}&customerId=${user.id}&limit=50&page=1`);
       } else {
         const from = new Date(currentDate); from.setHours(0,0,0,0);
         const to = new Date(currentDate); to.setHours(23,59,59,999);
@@ -171,6 +194,9 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       const items = data.items ?? data ?? [];
 
       if (items.length === 0) {
+        empty.textContent = isCustomer
+          ? (customerTab === "upcoming" ? "No tienes citas próximas." : "No tienes citas en el historial.")
+          : "No hay citas para este día.";
         empty.classList.remove("hidden");
         return;
       }

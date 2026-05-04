@@ -31,7 +31,7 @@ const { title = "Panel", section = "" } = Astro.props;
       </div>
 
       <!-- Nav -->
-      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5" id="sidebar-nav">
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5" id="sidebar-nav" data-section={section}>
         <!-- Items injected by JS based on role -->
       </nav>
 
@@ -81,9 +81,11 @@ const { title = "Panel", section = "" } = Astro.props;
   </body>
 </html>
 
-<script define:vars={{ section }}>
+<script>
   import { getUser, clearSession, isAuthenticated } from "@/lib/auth";
   import { apiFetch } from "@/lib/api";
+
+  const section = document.getElementById("sidebar-nav")?.dataset.section ?? "";
 
   if (!isAuthenticated()) { window.location.href = "/login"; throw new Error("redirect"); }
 

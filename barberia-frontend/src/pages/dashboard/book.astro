@@ -318,7 +318,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
         return;
       }
       available.forEach(slot => {
-        const time = typeof slot === "string" ? slot : slot.time ?? slot.startTime ?? slot;
+        const time = typeof slot === "string" ? slot : slot.startsAt ?? slot.time ?? slot.startTime;
         const btn = document.createElement("button");
         btn.dataset.slot = time;
         btn.className = "slot-btn px-3 py-1.5 text-sm rounded-lg border-2 border-base-700 bg-base-800/40 text-base-300 hover:border-accent-500 hover:text-accent-400 transition-all";
@@ -419,19 +419,19 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       }
     }
 
-    const body = {
-      customerId,
-      barberId: state.selectedBarberId,
-      scheduledAt: new Date(state.selectedSlot).toISOString(),
-      serviceIds: state.selectedServices.map(s => s.id),
-    };
-    const notes = document.getElementById("apt-notes").value.trim();
-    if (notes) body.notes = notes;
-
     const btn = document.getElementById("btn-submit-book");
     btn.disabled = true;
     btn.textContent = "Reservando…";
     try {
+      const body = {
+        customerId,
+        barberId: state.selectedBarberId,
+        scheduledAt: new Date(state.selectedSlot).toISOString(),
+        serviceIds: state.selectedServices.map(s => s.id),
+      };
+      const notes = document.getElementById("apt-notes").value.trim();
+      if (notes) body.notes = notes;
+
       await apiFetch("/appointments", { method: "POST", body: JSON.stringify(body) });
       window.toast("Cita reservada correctamente", "success");
       setTimeout(() => { window.location.href = "/dashboard/appointments"; }, 1200);

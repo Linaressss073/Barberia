@@ -4,6 +4,8 @@ import Button from "@/components/fundations/elements/Button.astro";
 import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 import Check from "@/components/fundations/icons/Check.astro";
 
+const salesEmail = import.meta.env.PUBLIC_SALES_EMAIL ?? "ventas@barberia.app";
+
 const pricingTiers = [
   {
     name: "Básico",
@@ -21,6 +23,7 @@ const pricingTiers = [
       "Soporte por email",
     ],
     cta: "Comenzar con Básico",
+    planKey: "BASIC",
     buttonVariant: "muted",
     isPopular: false,
     bgClass: "bg-base-900 border-base-800",
@@ -45,6 +48,7 @@ const pricingTiers = [
       "Programa de lealtad para clientes",
     ],
     cta: "Ir a Profesional",
+    planKey: "PROFESSIONAL",
     buttonVariant: "default",
     isPopular: true,
     bgClass: "bg-base-900 border-accent-700/50",
@@ -69,6 +73,8 @@ const pricingTiers = [
       "Onboarding personalizado",
     ],
     cta: "Hablar con ventas",
+    planKey: "ENTERPRISE",
+    isEnterprise: true,
     buttonVariant: "muted",
     isPopular: false,
     bgClass: "bg-base-900 border-base-800",
@@ -169,15 +175,29 @@ const pricingTiers = [
                 >
                   {tier.description}
                 </Text>
-                <Button
-                  variant={tier.buttonVariant}
-                  size="base"
-                  class="w-full mt-12"
-                  isLink
-                  href="/signup"
-                >
-                  {tier.cta}
-                </Button>
+                {tier.isEnterprise ? (
+                  <button
+                    type="button"
+                    data-enterprise-open
+                    class:list={[
+                      "flex w-full mt-12 justify-center text-center font-medium items-center duration-500 ease-in-out transition-all focus:outline-2 focus:outline-offset-4",
+                      "text-base-100 bg-base-800 hover:bg-base-700 border border-base-700 focus:outline-base-600",
+                      "h-10 px-5 py-4 text-sm rounded-lg",
+                    ]}
+                  >
+                    {tier.cta}
+                  </button>
+                ) : (
+                  <Button
+                    variant={tier.buttonVariant}
+                    size="base"
+                    class="w-full mt-12"
+                    isLink
+                    href={`/signup?plan=${tier.planKey}`}
+                  >
+                    {tier.cta}
+                  </Button>
+                )}
               </div>
             </div>
             <div class="p-8 flex flex-col">
@@ -228,6 +248,39 @@ const pricingTiers = [
       }
     </div>
   </Wrapper>
+
+  <!-- Enterprise: hablar con ventas -->
+  <div
+    id="enterprise-modal"
+    class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/70 px-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="enterprise-modal-title"
+  >
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+      <h3 id="enterprise-modal-title" class="text-lg font-semibold text-base-50 font-display">
+        Hablar con ventas
+      </h3>
+      <p class="mt-3 text-sm text-base-400 leading-relaxed">
+        Enterprise incluye barberos ilimitados, prioridad y opciones avanzadas. Cuéntanos tu operación y te contactamos.
+      </p>
+      <div class="mt-6 flex flex-col sm:flex-row gap-3">
+        <a
+          href={`mailto:${salesEmail}?subject=Plan%20Enterprise%20%E2%80%94%20Barber%C3%ADa`}
+          class="flex-1 flex justify-center items-center h-10 px-4 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 transition-colors"
+        >
+          Escribir a ventas
+        </a>
+        <button
+          type="button"
+          data-enterprise-close
+          class="flex-1 h-10 px-4 text-sm font-medium rounded-lg bg-base-800 text-base-100 border border-base-700 hover:bg-base-700"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
 </section>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -258,5 +311,18 @@ const pricingTiers = [
     };
     monthlyBtn.addEventListener("click", () => togglePricing(true));
     annualBtn.addEventListener("click", () => togglePricing(false));
+
+    const modal = document.getElementById("enterprise-modal");
+    const openModal = () => modal?.classList.remove("hidden");
+    const closeModal = () => modal?.classList.add("hidden");
+    document.querySelectorAll("[data-enterprise-open]").forEach((el) => {
+      el.addEventListener("click", openModal);
+    });
+    document.querySelectorAll("[data-enterprise-close]").forEach((el) => {
+      el.addEventListener("click", closeModal);
+    });
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
   });
 </script>

@@ -19,10 +19,17 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         <Text
           tag="p"
           variant="textBase"
+          data-signup-subtitle
           class="mt-4 text-base-400 font-medium text-balance"
         >
           Únete y comienza a reservar citas en tu barbería favorita.
         </Text>
+        <p
+          id="plan-notice"
+          class="hidden mt-4 p-3 rounded-lg bg-accent-900/30 border border-accent-800/50 text-sm text-accent-200"
+        >
+          <span id="plan-notice-text"></span>
+        </p>
         <a href="/" class="inline-flex items-center gap-1 text-xs text-base-500 hover:text-accent-400 mt-2 transition-colors">
           ← Ver planes y funciones
         </a>
@@ -36,9 +43,28 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 
         <form id="signup-form" class="mx-auto mt-8" novalidate>
           <div class="flex flex-col gap-y-6">
+            <input type="hidden" id="plan-field" name="plan" value="" />
+            <div id="business-wrap" class="hidden">
+              <label for="business-name" class="text-sm text-base-400 font-medium">
+                Nombre del negocio <span class="text-accent-500">*</span>
+              </label>
+              <div class="mt-2.5">
+                <input
+                  type="text"
+                  name="businessName"
+                  id="business-name"
+                  autocomplete="organization"
+                  minlength="2"
+                  maxlength="120"
+                  placeholder="Ej. Barbería El Corte"
+                  class="block w-full h-10 px-4 py-2 text-sm text-base-100 duration-300 bg-base-900 border border-transparent rounded-lg appearance-none ring-1 ring-base-700 placeholder-base-600 focus:border-transparent focus:outline-none focus:ring-accent-500 focus:ring-offset-2 focus:ring-offset-base-950 focus:ring-2 sm:text-sm"
+                />
+              </div>
+              <p class="mt-1 text-xs text-base-500">Será el nombre de tu espacio en Barbería (plan con 14 días gratis).</p>
+            </div>
             <div>
               <label for="full-name" class="text-sm text-base-400 font-medium">
-                Nombre completo
+                Tu nombre completo
               </label>
               <div class="mt-2.5">
                 <input
@@ -146,6 +172,40 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     window.location.href = getRoleRedirect(u.roles ?? []);
   }
 
+  const VALID_PLANS = ["BASIC", "PROFESSIONAL", "ENTERPRISE", "TRIAL"] as const;
+  const PLAN_LABELS: Record<string, string> = {
+    BASIC: "Básico",
+    PROFESSIONAL: "Profesional",
+    ENTERPRISE: "Enterprise",
+    TRIAL: "Prueba",
+  };
+
+  const sp = new URLSearchParams(window.location.search);
+  const rawPlan = sp.get("plan");
+  const selectedPlan =
+    rawPlan && VALID_PLANS.includes(rawPlan as (typeof VALID_PLANS)[number])
+      ? rawPlan
+      : null;
+
+  const planField = document.getElementById("plan-field") as HTMLInputElement | null;
+  const businessWrap = document.getElementById("business-wrap");
+  const businessNameInput = document.getElementById("business-name") as HTMLInputElement | null;
+  const planNotice = document.getElementById("plan-notice");
+  const planNoticeText = document.getElementById("plan-notice-text");
+  const subEl = document.querySelector("[data-signup-subtitle]");
+
+  if (selectedPlan && planField && businessWrap && businessNameInput && planNotice && planNoticeText) {
+    planField.value = selectedPlan;
+    businessWrap.classList.remove("hidden");
+    businessNameInput.required = true;
+    planNotice.classList.remove("hidden");
+    const label = PLAN_LABELS[selectedPlan] ?? selectedPlan;
+    planNoticeText.textContent = `Estás registrando tu barbería con el plan ${label} — 14 días gratis.`;
+    if (subEl)
+      subEl.textContent =
+        "Crea tu cuenta de administrador y configura tu negocio en minutos.";
+  }
+
   const form = document.getElementById(
     "signup-form"
   ) as HTMLFormElement | null;
@@ -182,6 +242,8 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     const fullName = (fd.get("fullName") as string).trim();
     const email = (fd.get("email") as string).trim();
     const password = fd.get("password") as string;
+    const businessName = (fd.get("businessName") as string | null)?.trim() ?? "";
+    const planFromForm = (fd.get("plan") as string | null)?.trim() || null;
 
     if (!fullName || !email || !password) {
       showError("Por favor completa todos los campos.");
@@ -189,6 +251,10 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     }
     if (password.length < 8) {
       showError("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (planFromForm && (!businessName || businessName.length < 2)) {
+      showError("Indica el nombre de tu barbería o negocio.");
       return;
     }
 
@@ -200,10 +266,16 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     const apiBase = getApiV1Url();
 
     try {
+      const regBody: Record<string, string> = { fullName, email, password };
+      if (planFromForm && businessName) {
+        regBody.businessName = businessName;
+        regBody.plan = planFromForm;
+      }
+
       const regRes = await fetch(`${apiBase}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify(regBody),
       });
 
       if (!regRes.ok) {
@@ -226,13 +298,26 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 
       const body = (await loginRes.json()) as {
         data: {
-          user: { id: string; email: string; fullName: string; roles: string[] };
+          user: {
+            id: string;
+            email: string;
+            fullName: string;
+            roles: string[];
+            tenantId?: string | null;
+          };
           tokens: { accessToken: string; refreshToken: string };
         };
       };
 
+      const u = body.data.user;
       saveSession(
-        body.data.user,
+        {
+          id: u.id,
+          email: u.email,
+          fullName: u.fullName,
+          roles: u.roles,
+          tenantId: u.tenantId ?? null,
+        },
         body.data.tokens.accessToken,
         body.data.tokens.refreshToken
       );

@@ -1,6 +1,5 @@
 import { plainToInstance } from 'class-transformer';
 import {
-  IsBooleanString,
   IsEnum,
   IsInt,
   IsOptional,
@@ -80,6 +79,18 @@ export class EnvironmentVariables {
   WHATSAPP_API_KEY?: string;
 }
 
+/**
+ * Nest puede pasar a `validate()` solo el resultado del merge interno (.env + loader),
+ * sin incluir todas las claves de `process.env`. En Render las variables se inyectan en el
+ * proceso; deben prevalecer sobre huecos del objeto recibido.
+ */
+function mergeWithRuntimeEnv(config: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...config,
+    ...(process.env as Record<string, unknown>),
+  };
+}
+
 /** Valores por defecto solo para variables que también tienen fallback en app.config (boot sin .env en algunos PaaS). */
 function applyEnvDefaults(config: Record<string, unknown>): Record<string, unknown> {
   const out = { ...config };
@@ -91,7 +102,7 @@ function applyEnvDefaults(config: Record<string, unknown>): Record<string, unkno
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
-  const merged = applyEnvDefaults(config);
+  const merged = applyEnvDefaults(mergeWithRuntimeEnv(config));
   const validated = plainToInstance(EnvironmentVariables, merged, {
     enableImplicitConversion: true,
   });

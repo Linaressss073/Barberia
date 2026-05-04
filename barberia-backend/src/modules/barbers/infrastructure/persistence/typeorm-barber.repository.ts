@@ -63,11 +63,13 @@ export class MongoBarberRepository implements BarberRepository {
   }
 
   async hasBlockOverlap(barberId: UniqueEntityId, startsAt: Date, endsAt: Date): Promise<boolean> {
-    const count = await this.blocks.countDocuments({
+    const filter: Record<string, unknown> = {
       barberId: barberId.value,
       startsAt: { $lt: endsAt },
       endsAt: { $gt: startsAt },
-    });
+    };
+    if (this.tenantId) filter['tenantId'] = this.tenantId;
+    const count = await this.blocks.countDocuments(filter);
     return count > 0;
   }
 

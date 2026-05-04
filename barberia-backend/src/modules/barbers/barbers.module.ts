@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { TenantsModule } from '@modules/tenants/tenants.module';
 import { BarberDoc, BarberSchema } from './infrastructure/persistence/barber.schema';
 import { BarberBlockDoc, BarberBlockSchema } from './infrastructure/persistence/barber-block.schema';
 import { MongoBarberRepository } from './infrastructure/persistence/typeorm-barber.repository';
@@ -16,6 +17,7 @@ import { BarbersController } from './presentation/controllers/barbers.controller
 
 @Module({
   imports: [
+    TenantsModule,
     MongooseModule.forFeature([
       { name: BarberDoc.name, schema: BarberSchema },
       { name: BarberBlockDoc.name, schema: BarberBlockSchema },

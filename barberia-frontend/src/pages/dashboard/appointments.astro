@@ -106,6 +106,26 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     </div>
   </div>
 
+  <!-- Calificar modal -->
+  <div id="modal-rate" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-4">Calificar servicio</h3>
+      <p class="text-sm text-base-500 mb-4">¿Cómo fue tu experiencia? Elige de 1 a 5 estrellas.</p>
+      <input type="hidden" id="rate-apt-id" />
+      <div id="rate-stars" class="flex justify-center gap-2 mb-6">
+        <button type="button" class="rate-star text-3xl text-base-700 hover:scale-110 transition-transform" data-value="1" aria-label="1 estrella">★</button>
+        <button type="button" class="rate-star text-3xl text-base-700 hover:scale-110 transition-transform" data-value="2" aria-label="2 estrellas">★</button>
+        <button type="button" class="rate-star text-3xl text-base-700 hover:scale-110 transition-transform" data-value="3" aria-label="3 estrellas">★</button>
+        <button type="button" class="rate-star text-3xl text-base-700 hover:scale-110 transition-transform" data-value="4" aria-label="4 estrellas">★</button>
+        <button type="button" class="rate-star text-3xl text-amber-400 hover:scale-110 transition-transform" data-value="5" aria-label="5 estrellas">★</button>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button id="rate-close" type="button" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 border border-base-700">Cerrar</button>
+        <button id="rate-submit" type="button" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Enviar</button>
+      </div>
+    </div>
+  </div>
+
 </DashboardLayout>
 
 <script>
@@ -183,7 +203,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
         const qs = customerTab === "upcoming"
           ? `from=${startOfToday.toISOString()}`
           : `to=${startOfToday.toISOString()}`;
-        data = await apiFetch(`/appointments?${qs}&customerId=${user.id}&limit=50&page=1`);
+        data = await apiFetch(`/appointments?${qs}&limit=50&page=1`);
       } else {
         const from = new Date(currentDate); from.setHours(0,0,0,0);
         const to = new Date(currentDate); to.setHours(23,59,59,999);
@@ -205,21 +225,22 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
         const tr = document.createElement("tr");
         tr.className = "hover:bg-base-800/30 transition-colors";
 
+        const aid = apt.id ?? apt._id;
         const status = apt.status ?? "BOOKED";
         const badgeCls = STATUS_BADGES[status] ?? STATUS_BADGES.BOOKED;
-        const serviceCount = apt.serviceIds?.length ?? apt.services?.length ?? 0;
+        const serviceCount = apt.serviceIds?.length ?? apt.services?.length ?? apt.items?.length ?? 0;
         const source = apt.source ?? "MANUAL";
 
         let actionButtons = "";
         if (isStaff) {
           if (status === "BOOKED") {
             actionButtons = `
-              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-blue-900/40 text-blue-400 border border-blue-800/40 hover:bg-blue-800/60 transition-colors" data-id="${apt.id}" data-action="confirm">Confirmar</button>
-              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${apt.id}" data-action="cancel">Cancelar</button>`;
+              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-blue-900/40 text-blue-400 border border-blue-800/40 hover:bg-blue-800/60 transition-colors" data-id="${aid}" data-action="confirm">Confirmar</button>
+              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${aid}" data-action="cancel">Cancelar</button>`;
           } else if (status === "CONFIRMED") {
             const cobrarBtn = canCobrar
               ? `<button class="btn-cobrar px-2.5 py-1 text-xs rounded-md bg-accent-500/20 text-accent-400 border border-accent-500/30 hover:bg-accent-500/30 transition-colors font-medium"
-                  data-id="${apt.id}"
+                  data-id="${aid}"
                   data-customer-id="${apt.customerId}"
                   data-barber-id="${apt.barberId}"
                   data-items='${JSON.stringify(apt.items ?? [])}'
@@ -227,14 +248,21 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
               : "";
             actionButtons = `
               ${cobrarBtn}
-              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-green-900/40 text-green-400 border border-green-800/40 hover:bg-green-800/60 transition-colors" data-id="${apt.id}" data-action="complete">Completar</button>
-              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-yellow-900/30 text-yellow-400 border border-yellow-800/30 hover:bg-yellow-800/40 transition-colors" data-id="${apt.id}" data-action="no-show">No llegó</button>
-              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${apt.id}" data-action="cancel">Cancelar</button>`;
+              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-green-900/40 text-green-400 border border-green-800/40 hover:bg-green-800/60 transition-colors" data-id="${aid}" data-action="complete">Completar</button>
+              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-yellow-900/30 text-yellow-400 border border-yellow-800/30 hover:bg-yellow-800/40 transition-colors" data-id="${aid}" data-action="no-show">No llegó</button>
+              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${aid}" data-action="cancel">Cancelar</button>`;
           }
         } else if (isCustomer) {
-          if (status === "BOOKED" || status === "CONFIRMED") {
+          if (status === "COMPLETED") {
+            const r = apt.rating;
+            if (r != null && r > 0) {
+              actionButtons = `<span class="text-amber-400 text-sm" title="Tu calificación">${"★".repeat(r)}${"☆".repeat(5 - r)}</span>`;
+            } else if (customerTab === "history") {
+              actionButtons = `<button type="button" class="btn-rate px-2.5 py-1 text-xs rounded-md bg-amber-900/30 text-amber-400 border border-amber-800/40 hover:bg-amber-800/40" data-id="${aid}">Calificar ⭐</button>`;
+            }
+          } else if (status === "BOOKED" || status === "CONFIRMED") {
             actionButtons = `
-              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${apt.id}" data-action="cancel">Cancelar</button>`;
+              <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${aid}" data-action="cancel">Cancelar</button>`;
           }
         }
 
@@ -262,6 +290,10 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 
       body.querySelectorAll(".btn-cobrar").forEach(btn => {
         btn.addEventListener("click", () => openCobrarModal(btn));
+      });
+
+      body.querySelectorAll(".btn-rate").forEach(btn => {
+        btn.addEventListener("click", () => openRateModal(btn.dataset.id));
       });
     } catch (err) {
       loading.classList.add("hidden");
@@ -411,6 +443,57 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     } finally {
       btn.disabled = false;
       btn.textContent = "Registrar Pago";
+    }
+  });
+
+  let selectedRating = 5;
+
+  function paintRateStars(n) {
+    document.querySelectorAll(".rate-star").forEach((el) => {
+      const v = parseInt(el.dataset.value, 10);
+      el.classList.toggle("text-amber-400", v <= n);
+      el.classList.toggle("text-base-700", v > n);
+    });
+  }
+
+  function openRateModal(aptId) {
+    document.getElementById("rate-apt-id").value = aptId;
+    selectedRating = 5;
+    paintRateStars(5);
+    document.getElementById("modal-rate").classList.remove("hidden");
+  }
+
+  document.querySelectorAll(".rate-star").forEach((el) => {
+    el.addEventListener("click", () => {
+      selectedRating = parseInt(el.dataset.value, 10);
+      paintRateStars(selectedRating);
+    });
+  });
+
+  document.getElementById("rate-close").addEventListener("click", () => {
+    document.getElementById("modal-rate").classList.add("hidden");
+  });
+  document.getElementById("modal-rate").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+
+  document.getElementById("rate-submit").addEventListener("click", async () => {
+    const id = document.getElementById("rate-apt-id").value;
+    if (!id || selectedRating < 1) return;
+    const btn = document.getElementById("rate-submit");
+    btn.disabled = true;
+    try {
+      await apiFetch(`/appointments/${id}/rate`, {
+        method: "PATCH",
+        body: JSON.stringify({ rating: selectedRating }),
+      });
+      document.getElementById("modal-rate").classList.add("hidden");
+      window.toast("¡Gracias por tu calificación!", "success");
+      loadAppointments();
+    } catch (err) {
+      window.toast(err.message ?? "No se pudo enviar", "error");
+    } finally {
+      btn.disabled = false;
     }
   });
 

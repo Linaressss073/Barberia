@@ -1,10 +1,15 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.decorator';
-import { Roles } from '@core/decorators/roles.decorator';
-import { Role } from '@core/decorators/roles.decorator';
+import { Role, Roles } from '@core/decorators/roles.decorator';
+import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
+import { RolesGuard } from '@modules/auth/presentation/guards/roles.guard';
 import { TenantsService } from '../application/tenants.service';
 import { TenantPlan } from '../infrastructure/persistence/tenant.schema';
 
+@ApiTags('Tenants')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenants: TenantsService) {}

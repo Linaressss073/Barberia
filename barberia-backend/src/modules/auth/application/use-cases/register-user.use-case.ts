@@ -96,6 +96,7 @@ export class RegisterUserUseCase {
           loyaltyPoints: 0,
           preferences: {},
           deletedAt: null,
+          tenantId: resolvedTenantId,
         });
       } catch {
         // Customer creation is best-effort — user account already saved

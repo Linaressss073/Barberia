@@ -116,6 +116,11 @@ export class User extends AggregateRoot<UserProps> {
     this.props.updatedAt = new Date();
   }
 
+  updateFullName(fullName: string): void {
+    this.props.fullName = fullName.trim();
+    this.props.updatedAt = new Date();
+  }
+
   assignRoles(roles: Role[]): void {
     if (roles.length === 0) {
       throw new BusinessRuleViolation('User must have at least one role');

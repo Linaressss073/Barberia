@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import { requestContext } from '@core/context/request-context';
 import {
   Channel,
   NotificationLogDoc,
@@ -23,8 +24,10 @@ export class NotificationsService {
     channel: Channel,
     input: { to: string; template: string; payload?: Record<string, unknown> },
   ): Promise<void> {
+    const ctx = requestContext.get();
     const log = await this.logs.create({
       _id: uuidv4(),
+      tenantId: ctx?.tenantId ?? null,
       channel,
       recipient: input.to,
       template: input.template,
@@ -49,6 +52,9 @@ export class NotificationsService {
   }
 
   list(limit = 50): Promise<NotificationLogDocument[]> {
-    return this.logs.find().sort({ createdAt: -1 }).limit(limit);
+    const tenantId = requestContext.get()?.tenantId;
+    const q: Record<string, unknown> = {};
+    if (tenantId) q['tenantId'] = tenantId;
+    return this.logs.find(q).sort({ createdAt: -1 }).limit(limit);
   }
 }

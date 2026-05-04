@@ -59,6 +59,10 @@ export class AppointmentDoc {
   @Prop({ type: [AppointmentItemSubdoc], default: [] })
   items!: AppointmentItemSubdoc[];
 
+  /** Calificación del cliente (1–5), solo citas COMPLETED */
+  @Prop({ type: Number, default: null })
+  rating!: number | null;
+
   @Prop({ type: String, default: null, index: true })
   tenantId!: string | null;
 

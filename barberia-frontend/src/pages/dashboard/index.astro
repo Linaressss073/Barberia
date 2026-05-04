@@ -5,6 +5,12 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 
   <!-- Staff quick stats (shown by JS) -->
   <div id="view-staff" class="hidden space-y-6">
+    <!-- Plan / límites (solo admin, datos de tenant) -->
+    <div id="admin-tenant-strip" class="hidden flex flex-wrap items-center gap-3 rounded-xl border border-base-800 bg-base-900 px-4 py-3">
+      <span id="tenant-plan-badge" class="text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full bg-accent-900/50 text-accent-400 border border-accent-800/40"></span>
+      <span id="tenant-trial-info" class="text-sm text-base-400"></span>
+      <span id="tenant-barber-usage" class="text-sm text-base-300 ml-auto"></span>
+    </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
       <div class="bg-base-900 rounded-xl border border-base-800 p-5">
         <p class="text-xs font-medium uppercase tracking-widest text-base-500">Citas hoy</p>
@@ -73,6 +79,37 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 
   if (isStaff) {
     show("view-staff");
+    if (roles.includes("ADMIN")) {
+      const strip = document.getElementById("admin-tenant-strip");
+      strip?.classList.remove("hidden");
+      Promise.all([
+        apiFetch("/tenants/me").catch(() => null),
+        apiFetch("/barbers?page=1&limit=500&onlyActive=true").catch(() => ({ total: 0 })),
+      ]).then(([tenant, barbersPage]) => {
+        const badge = document.getElementById("tenant-plan-badge");
+        const trialEl = document.getElementById("tenant-trial-info");
+        const usageEl = document.getElementById("tenant-barber-usage");
+        if (!tenant || !badge || !trialEl || !usageEl) return;
+        const planLabels = {
+          TRIAL: "Prueba",
+          BASIC: "Básico",
+          PROFESSIONAL: "Profesional",
+          ENTERPRISE: "Enterprise",
+        };
+        badge.textContent = planLabels[tenant.plan] ?? tenant.plan;
+        if (tenant.trialEndsAt && tenant.plan === "TRIAL") {
+          const end = new Date(tenant.trialEndsAt);
+          const days = Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86400000));
+          trialEl.textContent = `Prueba gratuita · ${days} día${days !== 1 ? "s" : ""} restantes`;
+        } else {
+          trialEl.textContent = "";
+        }
+        const n = barbersPage?.total ?? barbersPage?.items?.length ?? 0;
+        const max = tenant.maxBarbers;
+        usageEl.textContent =
+          max === -1 ? `Barberos activos: ${n} (ilimitado)` : `Barberos activos: ${n} / ${max}`;
+      });
+    }
     const now = new Date();
     const from = new Date(now); from.setHours(0,0,0,0);
     const to = new Date(now); to.setHours(23,59,59,999);

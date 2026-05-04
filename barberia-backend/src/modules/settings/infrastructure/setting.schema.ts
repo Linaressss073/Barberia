@@ -8,7 +8,10 @@ export class SettingDoc {
   @Prop({ type: String, required: true })
   _id!: string;
 
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: String, index: true, default: null })
+  tenantId!: string | null;
+
+  @Prop({ type: String, required: true })
   key!: string;
 
   @Prop({ type: Object })
@@ -22,3 +25,4 @@ export class SettingDoc {
 }
 
 export const SettingSchema = SchemaFactory.createForClass(SettingDoc);
+SettingSchema.index({ tenantId: 1, key: 1 }, { unique: true });

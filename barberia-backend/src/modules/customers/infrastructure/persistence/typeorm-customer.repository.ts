@@ -65,6 +65,8 @@ export class MongoCustomerRepository implements CustomerRepository {
   }
 
   async softDelete(id: UniqueEntityId): Promise<void> {
-    await this.model.findOneAndUpdate({ _id: id.value }, { $set: { deletedAt: new Date() } });
+    const filter: Record<string, unknown> = { _id: id.value };
+    if (this.tenantId) filter['tenantId'] = this.tenantId;
+    await this.model.findOneAndUpdate(filter, { $set: { deletedAt: new Date() } });
   }
 }

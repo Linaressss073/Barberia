@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { requestContext } from '@core/context/request-context';
 import { EntityNotFound } from '@core/exceptions/domain.exception';
 import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persistence/appointment.schema';
 import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
@@ -21,12 +22,17 @@ export class GetAvailabilityUseCase {
     @InjectModel(BarberBlockDoc.name) private readonly blocks: Model<BarberBlockDocument>,
   ) {}
 
+  private tenantQ(): Record<string, unknown> {
+    const t = requestContext.get()?.tenantId;
+    return t ? { tenantId: t } : {};
+  }
+
   async execute(input: {
     barberId: string;
     date: Date;
     durationMin: number;
   }): Promise<AvailabilitySlot[]> {
-    const barber = await this.barbers.findOne({ _id: input.barberId });
+    const barber = await this.barbers.findOne({ _id: input.barberId, ...this.tenantQ() });
     if (!barber) throw new EntityNotFound('Barber not found');
     if (!barber.active) return [];
 
@@ -44,11 +50,13 @@ export class GetAvailabilityUseCase {
         status: { $nin: ['CANCELLED', 'NO_SHOW'] },
         scheduledAt: { $lt: dayEnd },
         endsAt: { $gt: dayStart },
+        ...this.tenantQ(),
       }),
       this.blocks.find({
         barberId: input.barberId,
         startsAt: { $lt: dayEnd },
         endsAt: { $gt: dayStart },
+        ...this.tenantQ(),
       }),
     ]);
 

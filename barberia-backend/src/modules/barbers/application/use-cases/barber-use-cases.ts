@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
 import {
   BusinessRuleViolation,
@@ -6,13 +8,20 @@ import {
   EntityNotFound,
   InvalidArgument,
 } from '@core/exceptions/domain.exception';
+import { requestContext } from '@core/context/request-context';
+import { TenantsService } from '@modules/tenants/application/tenants.service';
+import { BarberDoc, BarberDocument } from '../../infrastructure/persistence/barber.schema';
 import { BARBER_REPOSITORY, BarberRepository } from '../../domain/repositories/barber.repository';
 import { Barber, BarberScheduleSlot } from '../../domain/entities/barber.entity';
 import { Page, buildPage } from '@shared/pagination/pagination.dto';
 
 @Injectable()
 export class CreateBarberUseCase {
-  constructor(@Inject(BARBER_REPOSITORY) private readonly repo: BarberRepository) {}
+  constructor(
+    @Inject(BARBER_REPOSITORY) private readonly repo: BarberRepository,
+    private readonly tenants: TenantsService,
+    @InjectModel(BarberDoc.name) private readonly barberModel: Model<BarberDocument>,
+  ) {}
 
   async execute(input: {
     userId: string;
@@ -21,6 +30,20 @@ export class CreateBarberUseCase {
     commissionPct: number;
     schedules?: BarberScheduleSlot[];
   }): Promise<Barber> {
+    const tenantId = requestContext.get()?.tenantId ?? null;
+    if (!tenantId) {
+      throw new BusinessRuleViolation('No se pudo determinar el tenant para crear el barbero');
+    }
+    const tenant = await this.tenants.findById(tenantId);
+    if (!tenant) throw new EntityNotFound('Tenant not found');
+
+    const activeCount = await this.barberModel.countDocuments({ tenantId, active: true });
+    if (tenant.maxBarbers !== -1 && activeCount >= tenant.maxBarbers) {
+      throw new BusinessRuleViolation(
+        `Tu plan ${tenant.plan} permite máximo ${tenant.maxBarbers} barberos activos`,
+      );
+    }
+
     const userId = new UniqueEntityId(input.userId);
     if (await this.repo.findByUserId(userId)) {
       throw new EntityConflict('Barber profile already exists for this user');

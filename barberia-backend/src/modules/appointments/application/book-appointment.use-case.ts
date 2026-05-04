@@ -40,6 +40,11 @@ export class BookAppointmentUseCase {
     private readonly notifications: NotificationsService,
   ) {}
 
+  private tenantQ(): Record<string, unknown> {
+    const t = requestContext.get()?.tenantId;
+    return t ? { tenantId: t } : {};
+  }
+
   async execute(
     input: BookAppointmentInput,
   ): Promise<{ id: string; endsAt: Date; totalCents: number }> {
@@ -56,16 +61,21 @@ export class BookAppointmentUseCase {
           barberId: input.barberId,
           scheduledAt: input.scheduledAt,
           status: { $nin: ['CANCELLED', 'NO_SHOW'] },
+          ...this.tenantQ(),
         }, null, { session });
         if (duplicate) {
           const totalCents = duplicate.items.reduce((s, i) => s + i.priceCents, 0);
           return { id: duplicate._id as string, endsAt: duplicate.endsAt, totalCents };
         }
 
-        const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null }, null, { session });
+        const customer = await this.customers.findOne(
+          { _id: input.customerId, deletedAt: null, ...this.tenantQ() },
+          null,
+          { session },
+        );
         if (!customer) throw new EntityNotFound('Customer not found');
 
-        const barber = await this.barbers.findOne({ _id: input.barberId }, null, { session });
+        const barber = await this.barbers.findOne({ _id: input.barberId, ...this.tenantQ() }, null, { session });
         if (!barber) throw new EntityNotFound('Barber not found');
         if (!barber.active) throw new BusinessRuleViolation('Barber is not active');
 
@@ -75,6 +85,7 @@ export class BookAppointmentUseCase {
           _id: { $in: input.serviceIds },
           active: true,
           deletedAt: null,
+          ...this.tenantQ(),
         }, null, { session });
         if (svcs.length !== input.serviceIds.length) {
           throw new EntityNotFound('One or more services not found or inactive');
@@ -89,6 +100,7 @@ export class BookAppointmentUseCase {
           barberId: input.barberId,
           startsAt: { $lt: endsAt },
           endsAt: { $gt: input.scheduledAt },
+          ...this.tenantQ(),
         }, { session });
         if (blockOverlap > 0) throw new BusinessRuleViolation('Barber has a block on that time');
 
@@ -98,6 +110,7 @@ export class BookAppointmentUseCase {
           status: { $nin: ['CANCELLED', 'NO_SHOW'] },
           scheduledAt: { $lt: endsAt },
           endsAt: { $gt: input.scheduledAt },
+          ...this.tenantQ(),
         }, { session });
         if (apptOverlap > 0) throw new EntityConflict('Time slot is no longer available');
 
@@ -137,13 +150,20 @@ export class BookAppointmentUseCase {
     result: { id: string; endsAt: Date; totalCents: number },
   ): Promise<void> {
     try {
-      const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null });
+      const customer = await this.customers.findOne({
+        _id: input.customerId,
+        deletedAt: null,
+        ...this.tenantQ(),
+      });
       if (!customer?.userId) return;
       const user = await this.users.findOne({ _id: customer.userId, deletedAt: null });
       if (!user?.email) return;
 
-      const barber = await this.barbers.findOne({ _id: input.barberId });
-      const svcs = await this.services.find({ _id: { $in: input.serviceIds } });
+      const barber = await this.barbers.findOne({ _id: input.barberId, ...this.tenantQ() });
+      const svcs = await this.services.find({
+        _id: { $in: input.serviceIds },
+        ...this.tenantQ(),
+      });
 
       await this.notifications.send('EMAIL', {
         to: user.email,

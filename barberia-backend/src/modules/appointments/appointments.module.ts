@@ -11,6 +11,7 @@ import { CancelAppointmentUseCase } from './application/cancel-appointment.use-c
 import { TransitionAppointmentUseCase } from './application/transition-appointment.use-case';
 import { ListAppointmentsUseCase } from './application/list-appointments.use-case';
 import { GetAvailabilityUseCase } from './application/availability.use-case';
+import { RateAppointmentUseCase } from './application/rate-appointment.use-case';
 import { AppointmentsController } from './presentation/appointments.controller';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 
@@ -33,6 +34,7 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
     TransitionAppointmentUseCase,
     ListAppointmentsUseCase,
     GetAvailabilityUseCase,
+    RateAppointmentUseCase,
   ],
   exports: [MongooseModule],
 })

@@ -51,9 +51,17 @@ export class SalesUseCases {
     private readonly inventory: InventoryDomainService,
   ) {}
 
+  private tenantQ(): Record<string, unknown> {
+    const t = requestContext.get()?.tenantId;
+    return t ? { tenantId: t } : {};
+  }
+
   async open(input: OpenSaleInput): Promise<SaleDocument> {
     if (input.appointmentId) {
-      const exists = await this.sales.findOne({ appointmentId: input.appointmentId });
+      const exists = await this.sales.findOne({
+        appointmentId: input.appointmentId,
+        ...this.tenantQ(),
+      });
       if (exists) throw new EntityConflict('Sale already exists for this appointment');
     }
     const ctx = requestContext.get();
@@ -73,18 +81,18 @@ export class SalesUseCases {
   async addItem(saleId: string, input: AddItemInput): Promise<SaleDocument> {
     if (input.qty <= 0) throw new InvalidArgument('qty must be > 0');
 
-    const sale = await this.sales.findOne({ _id: saleId, status: 'OPEN' });
+    const sale = await this.sales.findOne({ _id: saleId, status: 'OPEN', ...this.tenantQ() });
     if (!sale) throw new BusinessRuleViolation('Sale not found or not OPEN');
 
     let unitPrice = 0;
     if (input.kind === 'SERVICE') {
       if (!input.serviceId) throw new InvalidArgument('serviceId is required');
-      const svc = await this.services.findOne({ _id: input.serviceId });
+      const svc = await this.services.findOne({ _id: input.serviceId, ...this.tenantQ() });
       if (!svc) throw new EntityNotFound('Service not found');
       unitPrice = svc.priceCents;
     } else if (input.kind === 'PRODUCT') {
       if (!input.productId) throw new InvalidArgument('productId is required');
-      const prod = await this.products.findOne({ _id: input.productId });
+      const prod = await this.products.findOne({ _id: input.productId, ...this.tenantQ() });
       if (!prod) throw new EntityNotFound('Product not found');
       unitPrice = prod.salePriceCents;
     } else {
@@ -103,7 +111,7 @@ export class SalesUseCases {
     };
 
     const updated = await this.sales.findOneAndUpdate(
-      { _id: saleId },
+      { _id: saleId, ...this.tenantQ() },
       {
         $push: { items: newItem },
         $inc: { subtotalCents: totalCents, totalCents: totalCents },
@@ -116,7 +124,7 @@ export class SalesUseCases {
   async addPayment(saleId: string, input: AddPaymentInput): Promise<SaleDocument> {
     if (input.amountCents <= 0) throw new InvalidArgument('amountCents must be > 0');
 
-    const sale = await this.sales.findOne({ _id: saleId, status: 'OPEN' });
+    const sale = await this.sales.findOne({ _id: saleId, status: 'OPEN', ...this.tenantQ() });
     if (!sale) throw new BusinessRuleViolation('Sale not found or not OPEN');
 
     const newPayment = {
@@ -127,7 +135,7 @@ export class SalesUseCases {
       paidAt: new Date(),
     };
     const updated = await this.sales.findOneAndUpdate(
-      { _id: saleId },
+      { _id: saleId, ...this.tenantQ() },
       { $push: { payments: newPayment } },
       { new: true },
     );
@@ -138,7 +146,11 @@ export class SalesUseCases {
     const session = await this.connection.startSession();
     try {
       return await session.withTransaction(async () => {
-        const sale = await this.sales.findOne({ _id: saleId, status: 'OPEN' }, null, { session });
+        const sale = await this.sales.findOne(
+          { _id: saleId, status: 'OPEN', ...this.tenantQ() },
+          null,
+          { session },
+        );
         if (!sale) throw new BusinessRuleViolation('Sale not found or not OPEN');
 
         if (sale.items.length === 0) throw new BusinessRuleViolation('Sale has no items');
@@ -154,6 +166,7 @@ export class SalesUseCases {
             active: true,
             startsAt: { $lte: now },
             endsAt: { $gt: now },
+            ...this.tenantQ(),
           }, null, { session }).sort({ discountPct: -1 });
           if (membership) {
             const pct = parseFloat(membership.discountPct);
@@ -183,7 +196,7 @@ export class SalesUseCases {
 
         const ctx = requestContext.get();
         const updated = await this.sales.findOneAndUpdate(
-          { _id: saleId },
+          { _id: saleId, ...this.tenantQ() },
           {
             $set: {
               subtotalCents: subtotal,
@@ -201,7 +214,7 @@ export class SalesUseCases {
         // Auto-complete linked appointment
         if (sale.appointmentId) {
           await this.appts.findOneAndUpdate(
-            { _id: sale.appointmentId, status: { $in: ['BOOKED', 'CONFIRMED'] } },
+            { _id: sale.appointmentId, status: { $in: ['BOOKED', 'CONFIRMED'] }, ...this.tenantQ() },
             { $set: { status: 'COMPLETED' } },
             { session },
           );
@@ -212,7 +225,7 @@ export class SalesUseCases {
           const points = Math.floor(total / 100);
           if (points > 0) {
             await this.customers.findOneAndUpdate(
-              { _id: sale.customerId },
+              { _id: sale.customerId, ...this.tenantQ() },
               { $inc: { loyaltyPoints: points } },
               { session },
             );
@@ -227,7 +240,7 @@ export class SalesUseCases {
   }
 
   async void(saleId: string, reason?: string): Promise<SaleDocument> {
-    const sale = await this.sales.findOne({ _id: saleId });
+    const sale = await this.sales.findOne({ _id: saleId, ...this.tenantQ() });
     if (!sale) throw new EntityNotFound('Sale not found');
     if (sale.status === 'VOIDED') return sale;
 
@@ -244,7 +257,7 @@ export class SalesUseCases {
     }
 
     const updated = await this.sales.findOneAndUpdate(
-      { _id: saleId },
+      { _id: saleId, ...this.tenantQ() },
       { $set: { status: 'VOIDED' } },
       { new: true },
     );
@@ -257,12 +270,12 @@ export class SalesUseCases {
     commissionPct: number;
     commissionCents: number;
   }> {
-    const sale = await this.sales.findOne({ _id: saleId });
+    const sale = await this.sales.findOne({ _id: saleId, ...this.tenantQ() });
     if (!sale) throw new EntityNotFound('Sale not found');
     if (sale.status !== 'CLOSED') throw new BusinessRuleViolation('Sale must be CLOSED');
     if (!sale.barberId) return { saleId, barberId: null, commissionPct: 0, commissionCents: 0 };
 
-    const barber = await this.barbers.findOne({ _id: sale.barberId });
+    const barber = await this.barbers.findOne({ _id: sale.barberId, ...this.tenantQ() });
     const pct = barber ? parseFloat(barber.commissionPct) : 0;
     const serviceSub = sale.items
       .filter((i) => i.kind === 'SERVICE')
@@ -274,7 +287,7 @@ export class SalesUseCases {
   }
 
   async getById(id: string): Promise<SaleDocument> {
-    const s = await this.sales.findOne({ _id: id });
+    const s = await this.sales.findOne({ _id: id, ...this.tenantQ() });
     if (!s) throw new EntityNotFound('Sale not found');
     return s;
   }

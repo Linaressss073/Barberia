@@ -86,7 +86,19 @@ async function ensureDefaultTenant(db: mongoose.mongo.Db): Promise<string> {
 }
 
 async function migrateExistingDataToTenant(db: mongoose.mongo.Db, tenantId: string): Promise<void> {
-  const collections = ['barbers', 'customers', 'services', 'appointments', 'sales', 'inventory_products', 'inventory_movements', 'barber_blocks'];
+  const collections = [
+    'barbers',
+    'customers',
+    'services',
+    'appointments',
+    'sales',
+    'inventory_products',
+    'inventory_movements',
+    'barber_blocks',
+    'notification_logs',
+    'memberships',
+    'settings',
+  ];
   for (const col of collections) {
     const result = await db.collection(col).updateMany(
       { tenantId: { $in: [null, undefined] } },

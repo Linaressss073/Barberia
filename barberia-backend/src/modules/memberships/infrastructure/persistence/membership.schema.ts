@@ -8,6 +8,9 @@ export class MembershipDoc {
   @Prop({ type: String, required: true })
   _id!: string;
 
+  @Prop({ type: String, index: true, default: null })
+  tenantId!: string | null;
+
   @Prop({ type: String, required: true, index: true })
   customerId!: string;
 

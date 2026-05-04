@@ -31,16 +31,22 @@ export class InventoryDomainService {
     private readonly movements: Model<InventoryMovementDocument>,
   ) {}
 
+  private productFilter(extra: Record<string, unknown>): Record<string, unknown> {
+    const tenantId = requestContext.get()?.tenantId;
+    if (tenantId) return { ...extra, tenantId };
+    return extra;
+  }
+
   async decrement(adj: StockAdjustment, session?: ClientSession): Promise<void> {
     if (adj.qty <= 0) throw new Error('qty must be > 0');
     const opts = session ? { session } : {};
     const result = await this.products.findOneAndUpdate(
-      { _id: adj.productId, stock: { $gte: adj.qty }, deletedAt: null },
+      this.productFilter({ _id: adj.productId, stock: { $gte: adj.qty }, deletedAt: null }),
       { $inc: { stock: -adj.qty } },
       { ...opts, new: true },
     );
     if (!result) {
-      const exists = await this.products.findOne({ _id: adj.productId });
+      const exists = await this.products.findOne(this.productFilter({ _id: adj.productId }));
       if (!exists) throw new EntityNotFound('Product not found');
       throw new BusinessRuleViolation('Insufficient stock', {
         productId: adj.productId,
@@ -54,7 +60,7 @@ export class InventoryDomainService {
     if (adj.qty <= 0) throw new Error('qty must be > 0');
     const opts = session ? { session } : {};
     const result = await this.products.findOneAndUpdate(
-      { _id: adj.productId, deletedAt: null },
+      this.productFilter({ _id: adj.productId, deletedAt: null }),
       { $inc: { stock: adj.qty } },
       { ...opts, new: true },
     );
@@ -65,10 +71,14 @@ export class InventoryDomainService {
   async adjust(productId: string, newStock: number, reason?: string, session?: ClientSession): Promise<void> {
     if (newStock < 0) throw new BusinessRuleViolation('Stock cannot be negative');
     const opts = session ? { session } : {};
-    const before = await this.products.findOne({ _id: productId });
+    const before = await this.products.findOne(this.productFilter({ _id: productId }));
     if (!before) throw new EntityNotFound('Product not found');
     const delta = newStock - before.stock;
-    await this.products.findOneAndUpdate({ _id: productId }, { $set: { stock: newStock } }, opts);
+    await this.products.findOneAndUpdate(
+      this.productFilter({ _id: productId }),
+      { $set: { stock: newStock } },
+      opts,
+    );
     await this.recordMovement(
       'ADJUST',
       {

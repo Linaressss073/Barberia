@@ -16,7 +16,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { Role, Roles } from '@core/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
@@ -28,6 +37,7 @@ import { CancelAppointmentUseCase } from '../application/cancel-appointment.use-
 import { TransitionAppointmentUseCase } from '../application/transition-appointment.use-case';
 import { ListAppointmentsUseCase } from '../application/list-appointments.use-case';
 import { GetAvailabilityUseCase } from '../application/availability.use-case';
+import { RateAppointmentUseCase } from '../application/rate-appointment.use-case';
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
 
@@ -37,6 +47,14 @@ class ListAppointmentsQuery extends PaginationQueryDto {
   @IsOptional() @IsString() status?: string;
   @IsOptional() @IsDateString() @Type(() => String) from?: string;
   @IsOptional() @IsDateString() @Type(() => String) to?: string;
+}
+
+class RateAppointmentBody {
+  @ApiProperty({ minimum: 1, maximum: 5 })
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating!: number;
 }
 
 @ApiTags('Appointments')
@@ -50,6 +68,7 @@ export class AppointmentsController {
     private readonly transitionUC: TransitionAppointmentUseCase,
     private readonly listUC: ListAppointmentsUseCase,
     private readonly availabilityUC: GetAvailabilityUseCase,
+    private readonly rateUC: RateAppointmentUseCase,
     @InjectModel(CustomerDoc.name) private readonly customers: Model<CustomerDocument>,
     @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
   ) {}
@@ -107,6 +126,20 @@ export class AppointmentsController {
       serviceIds: dto.serviceIds,
       source: dto.source ?? 'WEB',
       notes: dto.notes,
+    });
+  }
+
+  @Patch(':id/rate')
+  @Roles(Role.Customer)
+  rate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RateAppointmentBody,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.rateUC.execute({
+      appointmentId: id,
+      userId: user.sub,
+      rating: dto.rating,
     });
   }
 

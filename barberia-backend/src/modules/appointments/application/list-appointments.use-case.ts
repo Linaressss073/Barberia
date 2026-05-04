@@ -52,9 +52,19 @@ export class ListAppointmentsUseCase {
     const customerIds = [...new Set(items.map(a => a.customerId).filter(Boolean))];
     const barberIds = [...new Set(items.map(a => a.barberId).filter(Boolean))];
 
+    const relFilter: Record<string, unknown> = {
+      _id: { $in: customerIds },
+    };
+    const barberRelFilter: Record<string, unknown> = {
+      _id: { $in: barberIds },
+    };
+    if (tenantId) {
+      relFilter['tenantId'] = tenantId;
+      barberRelFilter['tenantId'] = tenantId;
+    }
     const [customerDocs, barberDocs] = await Promise.all([
-      this.customers.find({ _id: { $in: customerIds } }, { _id: 1, fullName: 1 }),
-      this.barbers.find({ _id: { $in: barberIds } }, { _id: 1, displayName: 1 }),
+      this.customers.find(relFilter, { _id: 1, fullName: 1 }),
+      this.barbers.find(barberRelFilter, { _id: 1, displayName: 1 }),
     ]);
 
     const customerMap = Object.fromEntries(customerDocs.map(c => [c._id, c.fullName]));

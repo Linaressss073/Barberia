@@ -410,9 +410,17 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     if (isCustomer) {
       try {
         const me = await apiFetch("/customers/me");
-        customerId = me.id;
+        if (!me || !(me as { id?: string }).id) {
+          window.toast(
+            "Tu cuenta no tiene perfil de cliente vinculado. Contacta a la barbería o vuelve a registrarte como cliente.",
+            "error",
+          );
+          isSubmitting = false;
+          return;
+        }
+        customerId = (me as { id: string }).id;
       } catch {
-        window.toast("No se pudo obtener el perfil de cliente", "error");
+        window.toast("No se pudo obtener el perfil de cliente. Comprueba la conexión o vuelve a iniciar sesión.", "error");
         isSubmitting = false;
         return;
       }

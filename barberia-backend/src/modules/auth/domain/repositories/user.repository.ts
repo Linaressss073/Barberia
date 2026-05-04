@@ -10,6 +10,8 @@ export interface UserListFilter {
   search?: string;
   role?: string;
   status?: string;
+  /** Cuando está definido, solo usuarios de ese tenant (aislamiento multi-barbería). */
+  tenantId?: string;
 }
 
 export interface UserRepository {

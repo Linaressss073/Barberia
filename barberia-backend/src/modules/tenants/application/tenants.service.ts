@@ -53,6 +53,20 @@ export class TenantsService {
     return tenant;
   }
 
+  async listDiscover(): Promise<{ id: string; name: string; slug: string }[]> {
+    const docs = await this.model
+      .find({ active: true })
+      .select('_id name slug')
+      .sort({ name: 1 })
+      .limit(100)
+      .lean();
+    return docs.map((d) => ({
+      id: String(d._id),
+      name: d.name,
+      slug: d.slug,
+    }));
+  }
+
   async updatePlan(id: string, plan: TenantPlan): Promise<TenantDocument> {
     const doc = await this.model.findOneAndUpdate(
       { _id: id },

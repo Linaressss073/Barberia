@@ -49,7 +49,7 @@ export class RegisterUserUseCase {
 
     // Owner registration: businessName present → create tenant + ADMIN
     const isOwnerRegistration = !!input.businessName;
-    let resolvedTenantId: string | null = input.tenantId ?? null;
+    let resolvedTenantId: string | null = null;
     let resolvedRoles: Role[];
 
     if (isOwnerRegistration) {
@@ -73,6 +73,21 @@ export class RegisterUserUseCase {
       resolvedRoles = [Role.Admin];
     } else {
       resolvedRoles = input.roles && input.roles.length > 0 ? input.roles : [Role.Customer];
+      if (!input.tenantId) {
+        throw new InvalidArgument('Debes indicar en qué barbería deseas registrarte.', {
+          field: 'tenantId',
+        });
+      }
+      const tenant = await this.tenantModel.findOne({
+        _id: input.tenantId,
+        active: true,
+      });
+      if (!tenant) {
+        throw new InvalidArgument('La barbería seleccionada no existe o no está disponible.', {
+          field: 'tenantId',
+        });
+      }
+      resolvedTenantId = input.tenantId;
     }
 
     const user = User.create({

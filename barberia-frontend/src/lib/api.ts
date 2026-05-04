@@ -1,5 +1,6 @@
 import { getApiV1Url } from './config';
 import { getAccessToken, getRefreshToken, saveSession, clearSession, getUser } from './auth';
+import { getSelectedTenantId } from './tenant-context';
 
 interface ApiSuccess<T> {
   success: true;
@@ -26,6 +27,28 @@ async function tryRefresh(): Promise<string | null> {
   }
 }
 
+function customerTenantHeader(): Record<string, string> {
+  const user = getUser();
+  const onlyCustomer =
+    user && user.roles.length === 1 && user.roles[0] === 'CUSTOMER';
+  if (!onlyCustomer) return {};
+  const tid = getSelectedTenantId();
+  return tid ? { 'X-Tenant-Id': tid } : {};
+}
+
+export async function apiFetchPublic<T = unknown>(path: string): Promise<T> {
+  const base = getApiV1Url();
+  const res = await fetch(`${base}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message ?? `Error ${res.status}`);
+  }
+  const body: ApiSuccess<T> = await res.json();
+  return body.data;
+}
+
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const base = getApiV1Url();
   let token = getAccessToken();
@@ -33,6 +56,7 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
   const buildHeaders = (t: string | null): HeadersInit => ({
     'Content-Type': 'application/json',
     ...(t ? { Authorization: `Bearer ${t}` } : {}),
+    ...customerTenantHeader(),
     ...((options.headers ?? {}) as Record<string, string>),
   });
 

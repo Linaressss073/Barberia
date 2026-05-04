@@ -36,6 +36,7 @@ import {
   CUSTOMER_REPOSITORY,
   CustomerRepository,
 } from '../../domain/repositories/customer.repository';
+import { EnsureCustomerProfileUseCase } from '../../application/use-cases/ensure-customer-profile.use-case';
 
 @ApiTags('Customers')
 @ApiBearerAuth()
@@ -49,6 +50,7 @@ export class CustomersController {
     private readonly listUC: ListCustomersUseCase,
     private readonly addPointsUC: AddLoyaltyPointsUseCase,
     private readonly redeemUC: RedeemLoyaltyPointsUseCase,
+    private readonly ensureCustomerUC: EnsureCustomerProfileUseCase,
     @Inject(CUSTOMER_REPOSITORY) private readonly repo: CustomerRepository,
   ) {}
 
@@ -56,7 +58,11 @@ export class CustomersController {
   @Roles(Role.Admin, Role.Receptionist, Role.Barber, Role.Customer)
   @ApiOperation({ summary: 'Perfil de cliente del usuario autenticado' })
   async getMe(@CurrentUser() user: AuthenticatedUser) {
-    const customer = await this.repo.findByUserId(new UniqueEntityId(user.sub));
+    const uid = new UniqueEntityId(user.sub);
+    let customer = await this.repo.findByUserId(uid);
+    if (!customer && user.roles.includes(Role.Customer)) {
+      customer = await this.ensureCustomerUC.execute(user.sub);
+    }
     return customer ? this.toJson(customer) : null;
   }
 

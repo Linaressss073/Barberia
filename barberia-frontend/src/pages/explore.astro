@@ -1,0 +1,105 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Text from "@/components/fundations/elements/Text.astro";
+import Wrapper from "@/components/fundations/containers/Wrapper.astro";
+---
+
+<BaseLayout>
+  <Wrapper class="pt-28 pb-20">
+    <div class="max-w-2xl mx-auto text-center mb-12">
+      <Text
+        tag="h1"
+        variant="displaySM"
+        class="font-display font-semibold text-base-50"
+      >
+        Elige una barbería
+      </Text>
+      <Text tag="p" variant="textBase" class="mt-3 text-base-400">
+        Selecciona dónde quieres reservar. Se guardará en tu dispositivo y se usará al
+        reservar si entras como cliente.
+      </Text>
+    </div>
+
+    <div
+      id="tenants-wrap"
+      class="max-w-3xl mx-auto grid gap-4 sm:grid-cols-2"
+    >
+      <div class="col-span-full p-8 text-center text-base-500 text-sm rounded-xl border border-base-800 bg-base-900/50">
+        Cargando barberías…
+      </div>
+    </div>
+  </Wrapper>
+</BaseLayout>
+
+<script>
+  import { apiFetchPublic } from "@/lib/api";
+  import { setSelectedTenantId } from "@/lib/tenant-context";
+
+  type TenantItem = { id: string; name: string; slug: string };
+
+  const wrap = document.getElementById("tenants-wrap");
+  if (wrap) {
+    (async () => {
+      try {
+        const list = await apiFetchPublic<TenantItem[]>("/tenants/discover");
+        if (list.length === 0) {
+          wrap.innerHTML =
+            '<p class="col-span-full p-8 text-center text-base-500 text-sm">No hay barberías disponibles todavía.</p>';
+          return;
+        }
+        wrap.innerHTML = list
+          .map(
+            (t) => `
+      <div class="rounded-xl border border-base-800 bg-base-900/80 p-5 flex flex-col gap-3">
+        <h2 class="text-base-100 font-semibold text-lg">${escapeHtml(t.name)}</h2>
+        <p class="text-xs text-base-500">/${escapeHtml(t.slug)}</p>
+        <div class="flex flex-wrap gap-2 mt-1">
+          <a href="/signup?tenant=${encodeURIComponent(t.id)}"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-base-800 text-base-100 border border-base-700 hover:bg-base-700">
+            Crear cuenta
+          </a>
+          <button type="button" data-tenant-id="${escapeAttr(t.id)}" data-action="book"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">
+            Reservar aquí
+          </button>
+          <button type="button" data-tenant-id="${escapeAttr(t.id)}" data-action="home"
+            class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-200 border border-base-700 hover:bg-base-700">
+            Solo guardar
+          </button>
+        </div>
+      </div>
+    `
+          )
+          .join("");
+
+        wrap.addEventListener("click", (e) => {
+          const btn = (e.target as HTMLElement).closest("button[data-tenant-id]");
+          if (!btn) return;
+          const id = btn.getAttribute("data-tenant-id");
+          const action = btn.getAttribute("data-action");
+          if (!id) return;
+          setSelectedTenantId(id);
+          if (action === "book") {
+            window.location.href = "/dashboard/book";
+          } else {
+            window.location.href = "/";
+          }
+        });
+      } catch {
+        wrap.innerHTML =
+          '<p class="col-span-full p-8 text-center text-rose-400 text-sm">No se pudo cargar el listado. Intenta más tarde.</p>';
+      }
+    })();
+  }
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  function escapeAttr(s: string): string {
+    return escapeHtml(s).replace(/'/g, "&#39;");
+  }
+</script>

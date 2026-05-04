@@ -10,6 +10,7 @@ import {
   PASSWORD_HASHER,
   PasswordHasher,
 } from '@modules/auth/application/ports/password-hasher.port';
+import { requestContext } from '@core/context/request-context';
 
 export interface AdminCreateUserInput {
   email: string;
@@ -35,12 +36,14 @@ export class AdminCreateUserUseCase {
       throw new EntityConflict('Email already registered');
     }
     const hash = await this.hasher.hash(passRes.getValue().value);
+    const tenantId = requestContext.get()?.tenantId ?? null;
     const user = User.create({
       email: emailRes.getValue(),
       fullName: input.fullName,
       password: HashedPassword.fromHash(hash),
       roles: input.roles,
       status: UserStatus.Active,
+      tenantId,
     });
     await this.users.save(user);
     return user;

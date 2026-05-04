@@ -34,6 +34,7 @@ export class MongoUserRepository implements UserRepository {
 
   async paginate(filter: UserListFilter): Promise<{ items: User[]; total: number }> {
     const query: Record<string, unknown> = { deletedAt: null };
+    if (filter.tenantId) query['tenantId'] = filter.tenantId;
     if (filter.status) query['status'] = filter.status;
     if (filter.role) query['roles'] = filter.role;
     if (filter.search) {

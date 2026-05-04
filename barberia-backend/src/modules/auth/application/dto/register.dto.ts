@@ -31,7 +31,10 @@ export class RegisterDto {
   @IsIn(['TRIAL', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE'])
   plan?: 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description:
+      'Obligatorio al registrarse como cliente (sin businessName). ID de la barbería (tenant) existente y activa.',
+  })
   @IsOptional()
   @IsUUID()
   tenantId?: string;

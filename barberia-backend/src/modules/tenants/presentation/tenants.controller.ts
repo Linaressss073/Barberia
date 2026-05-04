@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.decorator';
-import { Role, Roles } from '@core/decorators/roles.decorator';
+import { Public, Role, Roles } from '@core/decorators/roles.decorator';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '@modules/auth/presentation/guards/roles.guard';
 import { TenantsService } from '../application/tenants.service';
@@ -13,6 +13,13 @@ import { TenantPlan } from '../infrastructure/persistence/tenant.schema';
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenants: TenantsService) {}
+
+  /** Listado público para que clientes elijan barbería (sin auth). */
+  @Public()
+  @Get('discover')
+  discover() {
+    return this.tenants.listDiscover();
+  }
 
   @Get('me')
   @Roles(Role.Admin)

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { UniqueEntityId } from '@core/domain/unique-entity-id';
+import { requestContext } from '@core/context/request-context';
 import { BarberListFilter, BarberRepository } from '../../domain/repositories/barber.repository';
 import { Barber } from '../../domain/entities/barber.entity';
 import { BarberDoc, BarberDocument } from './barber.schema';
@@ -16,23 +17,36 @@ export class MongoBarberRepository implements BarberRepository {
     @InjectModel(BarberBlockDoc.name) private readonly blocks: Model<BarberBlockDocument>,
   ) {}
 
+  private get tenantId(): string | null {
+    return requestContext.get()?.tenantId ?? null;
+  }
+
   async findById(id: UniqueEntityId): Promise<Barber | null> {
-    const doc = await this.model.findOne({ _id: id.value });
+    const query: Record<string, unknown> = { _id: id.value };
+    if (this.tenantId) query['tenantId'] = this.tenantId;
+    const doc = await this.model.findOne(query);
     return doc ? BarberMapper.toDomain(doc) : null;
   }
 
   async findByUserId(userId: UniqueEntityId): Promise<Barber | null> {
-    const doc = await this.model.findOne({ userId: userId.value });
+    const query: Record<string, unknown> = { userId: userId.value };
+    if (this.tenantId) query['tenantId'] = this.tenantId;
+    const doc = await this.model.findOne(query);
     return doc ? BarberMapper.toDomain(doc) : null;
   }
 
   async save(barber: Barber): Promise<void> {
     const data = BarberMapper.toDoc(barber);
-    await this.model.findOneAndUpdate({ _id: data._id }, { $set: data }, { upsert: true });
+    await this.model.findOneAndUpdate(
+      { _id: data._id },
+      { $set: { ...data, tenantId: this.tenantId } },
+      { upsert: true },
+    );
   }
 
   async paginate(filter: BarberListFilter): Promise<{ items: Barber[]; total: number }> {
     const query: Record<string, unknown> = {};
+    if (this.tenantId) query['tenantId'] = this.tenantId;
     if (filter.onlyActive) query['active'] = true;
     if (filter.search) {
       query['$or'] = [
@@ -66,6 +80,7 @@ export class MongoBarberRepository implements BarberRepository {
     await this.blocks.create({
       _id: uuidv4(),
       barberId: barberId.value,
+      tenantId: this.tenantId,
       startsAt,
       endsAt,
       reason: reason ?? null,

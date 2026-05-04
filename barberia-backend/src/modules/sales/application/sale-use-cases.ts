@@ -62,6 +62,7 @@ export class SalesUseCases {
       customerId: input.customerId ?? null,
       barberId: input.barberId ?? null,
       appointmentId: input.appointmentId ?? null,
+      tenantId: ctx?.tenantId ?? null,
       status: 'OPEN',
       createdBy: ctx?.userId ?? null,
       items: [],

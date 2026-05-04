@@ -59,6 +59,9 @@ export class AppointmentDoc {
   @Prop({ type: [AppointmentItemSubdoc], default: [] })
   items!: AppointmentItemSubdoc[];
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   createdAt!: Date;
   updatedAt!: Date;
 }

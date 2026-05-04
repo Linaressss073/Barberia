@@ -93,6 +93,9 @@ export class SaleDoc {
   @Prop({ type: [PaymentSubdoc], default: [] })
   payments!: PaymentSubdoc[];
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   createdAt!: Date;
   updatedAt!: Date;
 }

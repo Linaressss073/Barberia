@@ -29,6 +29,9 @@ export class CustomerDoc {
   @Prop({ type: Object, default: {} })
   preferences!: Record<string, unknown>;
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   @Prop({ type: Date, default: null })
   deletedAt!: Date | null;
 

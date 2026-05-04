@@ -44,6 +44,9 @@ export class BarberDoc {
   @Prop({ type: [BarberScheduleSubdoc], default: [] })
   schedules!: BarberScheduleSubdoc[];
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   createdAt!: Date;
   updatedAt!: Date;
 }

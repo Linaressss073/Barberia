@@ -44,6 +44,9 @@ export class ServiceDoc {
   @Prop({ type: [PromotionSubdoc], default: [] })
   promotions!: PromotionSubdoc[];
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   @Prop({ type: Date, default: null })
   deletedAt!: Date | null;
 

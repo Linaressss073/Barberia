@@ -8,8 +8,11 @@ export class InventoryProductDoc {
   @Prop({ type: String, required: true })
   _id!: string;
 
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: String, required: true })
   sku!: string;
+
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
 
   @Prop({ type: String, required: true })
   name!: string;

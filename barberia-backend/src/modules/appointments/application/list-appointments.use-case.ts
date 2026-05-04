@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { requestContext } from '@core/context/request-context';
 import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persistence/appointment.schema';
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
@@ -30,7 +31,9 @@ export class ListAppointmentsUseCase {
   ) {}
 
   async execute(input: ListAppointmentsInput): Promise<Page<EnrichedAppointment>> {
+    const tenantId = requestContext.get()?.tenantId;
     const query: Record<string, unknown> = {};
+    if (tenantId) query['tenantId'] = tenantId;
     if (input.barberId) query['barberId'] = input.barberId;
     if (input.customerId) query['customerId'] = input.customerId;
     if (input.status) query['status'] = input.status;

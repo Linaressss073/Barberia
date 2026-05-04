@@ -109,6 +109,7 @@ export class BookAppointmentUseCase {
           barberId: input.barberId,
           scheduledAt: input.scheduledAt,
           endsAt,
+          tenantId: ctx?.tenantId ?? null,
           status: 'BOOKED',
           source: input.source ?? 'WEB',
           notes: input.notes ?? null,

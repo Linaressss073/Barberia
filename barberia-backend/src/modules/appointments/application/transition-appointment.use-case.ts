@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BusinessRuleViolation, EntityNotFound } from '@core/exceptions/domain.exception';
+import { requestContext } from '@core/context/request-context';
 import {
   AppointmentDoc,
   AppointmentDocument,
@@ -35,7 +36,9 @@ export class TransitionAppointmentUseCase {
   ) {}
 
   async execute(id: string, next: AppointmentStatus): Promise<AppointmentDocument> {
-    const appt = await this.repo.findOne({ _id: id });
+    const tenantId = requestContext.get()?.tenantId;
+    const tenantFilter = tenantId ? { tenantId } : {};
+    const appt = await this.repo.findOne({ _id: id, ...tenantFilter });
     if (!appt) throw new EntityNotFound('Appointment not found');
     if (!TRANSITIONS[appt.status].includes(next)) {
       throw new BusinessRuleViolation(`Invalid transition ${appt.status} → ${next}`);

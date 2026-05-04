@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BusinessRuleViolation, EntityNotFound } from '@core/exceptions/domain.exception';
+import { requestContext } from '@core/context/request-context';
 import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persistence/appointment.schema';
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { UserDoc, UserDocument } from '@modules/auth/infrastructure/persistence/user.schema';
@@ -19,7 +20,9 @@ export class CancelAppointmentUseCase {
   ) {}
 
   async execute(input: { id: string; reason?: string; force?: boolean }): Promise<void> {
-    const appt = await this.repo.findOne({ _id: input.id });
+    const tenantId = requestContext.get()?.tenantId;
+    const tenantFilter = tenantId ? { tenantId } : {};
+    const appt = await this.repo.findOne({ _id: input.id, ...tenantFilter });
     if (!appt) throw new EntityNotFound('Appointment not found');
     if (appt.status === 'CANCELLED' || appt.status === 'COMPLETED' || appt.status === 'NO_SHOW') {
       throw new BusinessRuleViolation(`Cannot cancel appointment in status ${appt.status}`);

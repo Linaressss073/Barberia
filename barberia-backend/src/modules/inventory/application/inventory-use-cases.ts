@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EntityConflict, EntityNotFound } from '@core/exceptions/domain.exception';
+import { requestContext } from '@core/context/request-context';
 import {
   InventoryProductDoc,
   InventoryProductDocument,
@@ -34,8 +35,15 @@ export class InventoryUseCases {
     private readonly domain: InventoryDomainService,
   ) {}
 
+  private get tenantId(): string | null {
+    return requestContext.get()?.tenantId ?? null;
+  }
+
   async createProduct(input: CreateProductInput): Promise<InventoryProductDocument> {
-    const exists = await this.products.findOne({ sku: input.sku });
+    const tenantId = this.tenantId;
+    const query: Record<string, unknown> = { sku: input.sku };
+    if (tenantId) query['tenantId'] = tenantId;
+    const exists = await this.products.findOne(query);
     if (exists) throw new EntityConflict('SKU already exists');
     return this.products.create({
       _id: uuidv4(),
@@ -46,21 +54,24 @@ export class InventoryUseCases {
       stock: input.initialStock ?? 0,
       minStock: input.minStock ?? 0,
       active: true,
+      tenantId,
     });
   }
 
   async updateProduct(id: string, patch: UpdateProductInput): Promise<InventoryProductDocument> {
-    const doc = await this.products.findOneAndUpdate(
-      { _id: id },
-      { $set: patch },
-      { new: true },
-    );
+    const tenantId = this.tenantId;
+    const filter: Record<string, unknown> = { _id: id };
+    if (tenantId) filter['tenantId'] = tenantId;
+    const doc = await this.products.findOneAndUpdate(filter, { $set: patch }, { new: true });
     if (!doc) throw new EntityNotFound('Product not found');
     return doc;
   }
 
   async getById(id: string): Promise<InventoryProductDocument> {
-    const doc = await this.products.findOne({ _id: id });
+    const tenantId = this.tenantId;
+    const filter: Record<string, unknown> = { _id: id };
+    if (tenantId) filter['tenantId'] = tenantId;
+    const doc = await this.products.findOne(filter);
     if (!doc) throw new EntityNotFound('Product not found');
     return doc;
   }
@@ -70,7 +81,9 @@ export class InventoryUseCases {
     limit: number;
     search?: string;
   }): Promise<Page<InventoryProductDocument>> {
+    const tenantId = this.tenantId;
     const query: Record<string, unknown> = {};
+    if (tenantId) query['tenantId'] = tenantId;
     if (input.search) {
       query['$or'] = [
         { sku: { $regex: input.search, $options: 'i' } },
@@ -86,9 +99,10 @@ export class InventoryUseCases {
   }
 
   async listLowStock(): Promise<InventoryProductDocument[]> {
-    return this.products
-      .find({ active: true, $expr: { $lte: ['$stock', '$minStock'] } })
-      .sort({ stock: 1 });
+    const tenantId = this.tenantId;
+    const query: Record<string, unknown> = { active: true, $expr: { $lte: ['$stock', '$minStock'] } };
+    if (tenantId) query['tenantId'] = tenantId;
+    return this.products.find(query).sort({ stock: 1 });
   }
 
   async registerIn(productId: string, qty: number, reason?: string): Promise<void> {

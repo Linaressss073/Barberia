@@ -20,6 +20,9 @@ export class BarberBlockDoc {
   @Prop({ type: String, default: null })
   reason!: string | null;
 
+  @Prop({ type: String, default: null, index: true })
+  tenantId!: string | null;
+
   @Prop({ type: Date, default: Date.now })
   createdAt!: Date;
 }

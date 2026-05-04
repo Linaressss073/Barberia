@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { requestContext } from '@core/context/request-context';
 import { SaleDoc, SaleDocument } from '@modules/sales/infrastructure/persistence/sale.schema';
 import { AppointmentDoc, AppointmentDocument } from '@modules/appointments/infrastructure/persistence/appointment.schema';
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
@@ -15,17 +16,20 @@ export class ReportsService {
     @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
   ) {}
 
+  private get tenantFilter(): Record<string, unknown> {
+    const tenantId = requestContext.get()?.tenantId;
+    return tenantId ? { tenantId } : {};
+  }
+
   async dailySales(
     from: Date,
     to: Date,
   ): Promise<Array<{ day: string; sales: number; total_cents: number }>> {
-    const result = await this.sales.aggregate([
-      { $match: { status: 'CLOSED', closedAt: { $gte: from, $lt: to } } },
+    return this.sales.aggregate([
+      { $match: { ...this.tenantFilter, status: 'CLOSED', closedAt: { $gte: from, $lt: to } } },
       {
         $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$closedAt' },
-          },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$closedAt' } },
           sales: { $sum: 1 },
           total_cents: { $sum: '$totalCents' },
         },
@@ -33,12 +37,11 @@ export class ReportsService {
       { $sort: { _id: 1 } },
       { $project: { _id: 0, day: '$_id', sales: 1, total_cents: 1 } },
     ]);
-    return result;
   }
 
   async topServices(from: Date, to: Date, limit = 10) {
     return this.sales.aggregate([
-      { $match: { status: 'CLOSED', closedAt: { $gte: from, $lt: to } } },
+      { $match: { ...this.tenantFilter, status: 'CLOSED', closedAt: { $gte: from, $lt: to } } },
       { $unwind: '$items' },
       { $match: { 'items.kind': 'SERVICE' } },
       {
@@ -55,12 +58,13 @@ export class ReportsService {
   }
 
   async occupancyByBarber(from: Date, to: Date) {
-    const rangeMinutes =
-      Math.floor((to.getTime() - from.getTime()) / 60_000);
+    const tenantFilter = this.tenantFilter;
+    const rangeMinutes = Math.floor((to.getTime() - from.getTime()) / 60_000);
 
     const apptAgg = await this.appts.aggregate([
       {
         $match: {
+          ...tenantFilter,
           status: { $nin: ['CANCELLED', 'NO_SHOW'] },
           scheduledAt: { $gte: from, $lt: to },
         },
@@ -69,9 +73,7 @@ export class ReportsService {
         $group: {
           _id: '$barberId',
           booked_minutes: {
-            $sum: {
-              $divide: [{ $subtract: ['$endsAt', '$scheduledAt'] }, 60000],
-            },
+            $sum: { $divide: [{ $subtract: ['$endsAt', '$scheduledAt'] }, 60000] },
           },
         },
       },
@@ -81,7 +83,7 @@ export class ReportsService {
       apptAgg.map((r: { _id: string; booked_minutes: number }) => [r._id, r.booked_minutes]),
     );
 
-    const allBarbers = await this.barbers.find();
+    const allBarbers = await this.barbers.find(tenantFilter);
     return allBarbers.map((b) => ({
       barber_id: b._id,
       display_name: b.displayName,
@@ -92,15 +94,20 @@ export class ReportsService {
 
   async commissionsByBarber(from: Date, to: Date) {
     return this.sales.aggregate([
-      { $match: { status: 'CLOSED', closedAt: { $gte: from, $lt: to }, barberId: { $ne: null } } },
+      {
+        $match: {
+          ...this.tenantFilter,
+          status: 'CLOSED',
+          closedAt: { $gte: from, $lt: to },
+          barberId: { $ne: null },
+        },
+      },
       { $unwind: '$items' },
       {
         $group: {
           _id: '$barberId',
           service_base: {
-            $sum: {
-              $cond: [{ $eq: ['$items.kind', 'SERVICE'] }, '$items.totalCents', 0],
-            },
+            $sum: { $cond: [{ $eq: ['$items.kind', 'SERVICE'] }, '$items.totalCents', 0] },
           },
         },
       },
@@ -137,6 +144,7 @@ export class ReportsService {
     return this.sales.aggregate([
       {
         $match: {
+          ...this.tenantFilter,
           status: 'CLOSED',
           closedAt: { $gte: from, $lt: to },
           customerId: { $ne: null },

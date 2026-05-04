@@ -95,6 +95,7 @@ export class InventoryDomainService {
       refType: adj.refType ?? null,
       refId: adj.refId ?? null,
       createdBy: ctx?.userId ?? null,
+      tenantId: ctx?.tenantId ?? null,
     };
     if (session) {
       await this.movements.create([doc], { session });

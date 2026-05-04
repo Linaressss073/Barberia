@@ -48,6 +48,41 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     </div>
   </div>
 
+  <!-- Cobrar modal -->
+  <div id="modal-cobrar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
+    <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+      <h3 class="text-base-100 font-semibold text-lg mb-1">Cobrar Cita</h3>
+      <p id="cobrar-summary" class="text-sm text-base-500 mb-5"></p>
+      <input type="hidden" id="cobrar-apt-id" />
+      <input type="hidden" id="cobrar-customer-id" />
+      <input type="hidden" id="cobrar-barber-id" />
+      <input type="hidden" id="cobrar-total-cents" />
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Método de pago</label>
+          <select id="cobrar-method" class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full">
+            <option value="CASH">Efectivo</option>
+            <option value="CARD">Tarjeta</option>
+            <option value="TRANSFER">Transferencia</option>
+            <option value="YAPE">Yape</option>
+            <option value="PLIN">Plin</option>
+            <option value="OTHER">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs uppercase tracking-widest text-base-500">Monto recibido (COP)</label>
+          <input id="cobrar-amount" type="number" min="0" step="1000"
+            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+          <p class="text-xs text-base-600 mt-1">Ingresa el valor en pesos (ej. 35000)</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="cobrar-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+        <button id="cobrar-confirm" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Registrar Pago</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Cancel modal -->
   <div id="modal-cancel" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
     <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
@@ -74,6 +109,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
   const user = getUser();
   const roles = user.roles.map(r => r.toUpperCase());
   const isStaff = roles.some(r => ["ADMIN","RECEPTIONIST","BARBER"].includes(r));
+  const canCobrar = roles.some(r => ["ADMIN","RECEPTIONIST"].includes(r));
   const isCustomer = roles.includes("CUSTOMER") && !isStaff;
 
   if (isStaff) {
@@ -155,7 +191,16 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
               <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-blue-900/40 text-blue-400 border border-blue-800/40 hover:bg-blue-800/60 transition-colors" data-id="${apt.id}" data-action="confirm">Confirmar</button>
               <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${apt.id}" data-action="cancel">Cancelar</button>`;
           } else if (status === "CONFIRMED") {
+            const cobrarBtn = canCobrar
+              ? `<button class="btn-cobrar px-2.5 py-1 text-xs rounded-md bg-accent-500/20 text-accent-400 border border-accent-500/30 hover:bg-accent-500/30 transition-colors font-medium"
+                  data-id="${apt.id}"
+                  data-customer-id="${apt.customerId}"
+                  data-barber-id="${apt.barberId}"
+                  data-items='${JSON.stringify(apt.items ?? [])}'
+                  data-customer="${apt.customer?.fullName ?? apt.customerId ?? ""}">Cobrar</button>`
+              : "";
             actionButtons = `
+              ${cobrarBtn}
               <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-green-900/40 text-green-400 border border-green-800/40 hover:bg-green-800/60 transition-colors" data-id="${apt.id}" data-action="complete">Completar</button>
               <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-yellow-900/30 text-yellow-400 border border-yellow-800/30 hover:bg-yellow-800/40 transition-colors" data-id="${apt.id}" data-action="no-show">No llegó</button>
               <button class="btn-action px-2.5 py-1 text-xs rounded-md bg-red-900/30 text-red-400 border border-red-800/30 hover:bg-red-800/40 transition-colors" data-id="${apt.id}" data-action="cancel">Cancelar</button>`;
@@ -187,6 +232,10 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 
       body.querySelectorAll(".btn-action").forEach(btn => {
         btn.addEventListener("click", () => handleAction(btn.dataset.id, btn.dataset.action));
+      });
+
+      body.querySelectorAll(".btn-cobrar").forEach(btn => {
+        btn.addEventListener("click", () => openCobrarModal(btn));
       });
     } catch (err) {
       loading.classList.add("hidden");
@@ -250,6 +299,92 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       loadAppointments();
     } catch (err) {
       window.toast(err.message ?? "Error al cancelar", "error");
+    }
+  });
+
+  function fmtCOP(cents) {
+    return (cents / 100).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  }
+
+  function openCobrarModal(btn) {
+    const items = JSON.parse(btn.dataset.items || "[]");
+    const totalCents = items.reduce((s, it) => s + (it.priceCents ?? 0), 0);
+    const serviceCount = items.length;
+    document.getElementById("cobrar-apt-id").value = btn.dataset.id;
+    document.getElementById("cobrar-customer-id").value = btn.dataset.customerId ?? "";
+    document.getElementById("cobrar-barber-id").value = btn.dataset.barberId ?? "";
+    document.getElementById("cobrar-total-cents").value = String(totalCents);
+    document.getElementById("cobrar-summary").textContent =
+      `${serviceCount} servicio${serviceCount !== 1 ? "s" : ""} · Total: ${fmtCOP(totalCents)}`;
+    document.getElementById("cobrar-amount").value = String(Math.round(totalCents / 100));
+    document.getElementById("cobrar-method").value = "CASH";
+    document.getElementById("modal-cobrar").classList.remove("hidden");
+  }
+
+  document.getElementById("cobrar-close").addEventListener("click", () => {
+    document.getElementById("modal-cobrar").classList.add("hidden");
+  });
+  document.getElementById("modal-cobrar").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+  });
+
+  document.getElementById("cobrar-confirm").addEventListener("click", async () => {
+    const aptId = document.getElementById("cobrar-apt-id").value;
+    const customerId = document.getElementById("cobrar-customer-id").value || undefined;
+    const barberId = document.getElementById("cobrar-barber-id").value || undefined;
+    const totalCents = parseInt(document.getElementById("cobrar-total-cents").value);
+    const method = document.getElementById("cobrar-method").value;
+    const amountPesos = parseInt(document.getElementById("cobrar-amount").value);
+    const amountCents = amountPesos * 100;
+
+    if (isNaN(amountPesos) || amountPesos <= 0) {
+      window.toast("Ingresa un monto válido", "error"); return;
+    }
+    if (amountCents < totalCents) {
+      window.toast(`El monto (${fmtCOP(amountCents)}) es menor al total (${fmtCOP(totalCents)})`, "error"); return;
+    }
+
+    const btn = document.getElementById("cobrar-confirm");
+    btn.disabled = true;
+    btn.textContent = "Procesando…";
+
+    try {
+      // 1. Abrir venta vinculada a la cita
+      const sale = await apiFetch("/sales", {
+        method: "POST",
+        body: JSON.stringify({ appointmentId: aptId, customerId, barberId }),
+      });
+
+      // 2. Agregar ítems de servicios desde los datos del botón
+      const aptBtn = document.querySelector(`.btn-cobrar[data-id="${aptId}"]`);
+      const items = aptBtn ? JSON.parse(aptBtn.dataset.items || "[]") : [];
+
+      for (const item of items) {
+        if (item.serviceId) {
+          await apiFetch(`/sales/${sale.id}/items`, {
+            method: "POST",
+            body: JSON.stringify({ kind: "SERVICE", serviceId: item.serviceId, qty: 1 }),
+          });
+        }
+      }
+
+      // 3. Registrar pago
+      await apiFetch(`/sales/${sale.id}/payments`, {
+        method: "POST",
+        body: JSON.stringify({ method, amountCents }),
+      });
+
+      // 4. Cerrar venta (auto-completa la cita)
+      await apiFetch(`/sales/${sale.id}/close`, { method: "POST" });
+
+      document.getElementById("modal-cobrar").classList.add("hidden");
+      window.toast("Pago registrado — cita completada", "success");
+      loadAppointments();
+    } catch (err) {
+      window.toast(err.message ?? "Error al procesar el pago", "error");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Registrar Pago";
     }
   });
 

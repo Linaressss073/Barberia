@@ -15,6 +15,8 @@ import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure
 import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
 import { BarberBlockDoc, BarberBlockDocument } from '@modules/barbers/infrastructure/persistence/barber-block.schema';
 import { ServiceDoc, ServiceDocument } from '@modules/services/infrastructure/persistence/service.schema';
+import { UserDoc, UserDocument } from '@modules/auth/infrastructure/persistence/user.schema';
+import { NotificationsService } from '@modules/notifications/application/notifications.service';
 
 export interface BookAppointmentInput {
   customerId: string;
@@ -34,6 +36,8 @@ export class BookAppointmentUseCase {
     @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
     @InjectModel(BarberBlockDoc.name) private readonly blocks: Model<BarberBlockDocument>,
     @InjectModel(ServiceDoc.name) private readonly services: Model<ServiceDocument>,
+    @InjectModel(UserDoc.name) private readonly users: Model<UserDocument>,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async execute(
@@ -44,8 +48,9 @@ export class BookAppointmentUseCase {
     }
 
     const session = await this.connection.startSession();
+    let result: { id: string; endsAt: Date; totalCents: number };
     try {
-      return await session.withTransaction(async () => {
+      result = await session.withTransaction(async () => {
         const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null }, null, { session });
         if (!customer) throw new EntityNotFound('Customer not found');
 
@@ -109,6 +114,40 @@ export class BookAppointmentUseCase {
       });
     } finally {
       await session.endSession();
+    }
+
+    void this.sendBookingNotification(input, result!);
+    return result!;
+  }
+
+  private async sendBookingNotification(
+    input: BookAppointmentInput,
+    result: { id: string; endsAt: Date; totalCents: number },
+  ): Promise<void> {
+    try {
+      const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null });
+      if (!customer?.userId) return;
+      const user = await this.users.findOne({ _id: customer.userId, deletedAt: null });
+      if (!user?.email) return;
+
+      const barber = await this.barbers.findOne({ _id: input.barberId });
+      const svcs = await this.services.find({ _id: { $in: input.serviceIds } });
+
+      await this.notifications.send('EMAIL', {
+        to: user.email,
+        template: 'appointment.booked',
+        payload: {
+          customerName: customer.fullName,
+          barberName: barber?.displayName ?? '',
+          scheduledAt: input.scheduledAt.toISOString(),
+          endsAt: result.endsAt.toISOString(),
+          services: svcs.map(s => s.name),
+          totalCents: result.totalCents,
+          appointmentId: result.id,
+        },
+      });
+    } catch {
+      // Notifications are best-effort — never fail the booking
     }
   }
 }

@@ -25,4 +25,3 @@ export class RefreshTokenDoc {
 }
 
 export const RefreshTokenSchema = SchemaFactory.createForClass(RefreshTokenDoc);
-RefreshTokenSchema.index({ userId: 1 });

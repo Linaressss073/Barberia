@@ -80,8 +80,19 @@ export class EnvironmentVariables {
   WHATSAPP_API_KEY?: string;
 }
 
+/** Valores por defecto solo para variables que también tienen fallback en app.config (boot sin .env en algunos PaaS). */
+function applyEnvDefaults(config: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...config };
+  const fe = out['FRONTEND_URL'];
+  if (fe == null || fe === '') {
+    out['FRONTEND_URL'] = 'http://localhost:4321';
+  }
+  return out;
+}
+
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
-  const validated = plainToInstance(EnvironmentVariables, config, {
+  const merged = applyEnvDefaults(config);
+  const validated = plainToInstance(EnvironmentVariables, merged, {
     enableImplicitConversion: true,
   });
   const errors = validateSync(validated, { skipMissingProperties: false });

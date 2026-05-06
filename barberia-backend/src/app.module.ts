@@ -7,6 +7,7 @@ import { validateEnv } from '@config/env.validation';
 import { appConfig } from '@config/app.config';
 import { databaseConfig } from '@config/database.config';
 import { jwtConfig } from '@config/jwt.config';
+import { mailConfig } from '@config/mail.config';
 
 import { DatabaseModule } from '@infrastructure/database/database.module';
 import { HealthModule } from '@infrastructure/http/health/health.module';
@@ -39,7 +40,7 @@ import { TenantsModule } from '@modules/tenants/tenants.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [appConfig, databaseConfig, jwtConfig],
+      load: [appConfig, databaseConfig, jwtConfig, mailConfig],
       validate: validateEnv,
     }),
     ThrottlerModule.forRootAsync({

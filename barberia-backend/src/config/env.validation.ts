@@ -77,6 +77,18 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   WHATSAPP_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  GMAIL_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  GMAIL_APP_PASSWORD?: string;
+
+  @IsOptional()
+  @IsString()
+  MAIL_FROM?: string;
 }
 
 /**

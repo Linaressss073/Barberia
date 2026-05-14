@@ -54,17 +54,9 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         <h2 class="text-base-100 font-semibold text-lg">${escapeHtml(t.name)}</h2>
         <p class="text-xs text-base-500">/${escapeHtml(t.slug)}</p>
         <div class="flex flex-wrap gap-2 mt-1">
-          <a href="/signup"
-            class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-base-800 text-base-100 border border-base-700 hover:bg-base-700">
-            Crear cuenta
-          </a>
           <button type="button" data-tenant-id="${escapeAttr(t.id)}" data-action="book"
             class="px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">
             Reservar aquí
-          </button>
-          <button type="button" data-tenant-id="${escapeAttr(t.id)}" data-action="home"
-            class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-200 border border-base-700 hover:bg-base-700">
-            Solo guardar
           </button>
         </div>
       </div>
@@ -76,14 +68,9 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           const btn = (e.target as HTMLElement).closest("button[data-tenant-id]");
           if (!btn) return;
           const id = btn.getAttribute("data-tenant-id");
-          const action = btn.getAttribute("data-action");
           if (!id) return;
           setSelectedTenantId(id);
-          if (action === "book") {
-            window.location.href = "/dashboard/book";
-          } else {
-            window.location.href = "/";
-          }
+          window.location.href = "/dashboard/book";
         });
       } catch {
         wrap.innerHTML =

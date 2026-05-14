@@ -18,7 +18,7 @@ import { RolesGuard } from '@modules/auth/presentation/guards/roles.guard';
 import { PaginationQueryDto } from '@shared/pagination/pagination.dto';
 import { ListUsersUseCase } from '../../application/use-cases/list-users.use-case';
 import { AdminCreateUserUseCase } from '../../application/use-cases/admin-create-user.use-case';
-import { UpdateUserRolesUseCase } from '../../application/use-cases/update-user-roles.use-case';
+import { UpdateUserRolesUseCase, LookupUserByEmailUseCase, AssignStaffUseCase } from '../../application/use-cases/update-user-roles.use-case';
 import { SetUserStatusUseCase } from '../../application/use-cases/set-user-status.use-case';
 import { AdminCreateUserDto } from '../../application/dto/admin-create-user.dto';
 import { UpdateUserRolesDto } from '../../application/dto/update-user-roles.dto';
@@ -33,8 +33,16 @@ export class UsersController {
     private readonly listUC: ListUsersUseCase,
     private readonly createUC: AdminCreateUserUseCase,
     private readonly rolesUC: UpdateUserRolesUseCase,
+    private readonly lookupUC: LookupUserByEmailUseCase,
+    private readonly assignUC: AssignStaffUseCase,
     private readonly statusUC: SetUserStatusUseCase,
   ) {}
+
+  @Get('lookup')
+  async lookup(@Query('email') email: string) {
+    if (!email) return null;
+    return this.lookupUC.execute(email);
+  }
 
   @Get()
   async list(@Query() q: PaginationQueryDto & { role?: string; status?: string }) {
@@ -73,6 +81,15 @@ export class UsersController {
     @Body() dto: UpdateUserRolesDto,
   ): Promise<void> {
     await this.rolesUC.execute(id, dto.roles);
+  }
+
+  @Post(':id/assign-staff')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async assignStaff(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserRolesDto,
+  ): Promise<void> {
+    await this.assignUC.execute(id, dto.roles);
   }
 
   @Patch(':id/enable')

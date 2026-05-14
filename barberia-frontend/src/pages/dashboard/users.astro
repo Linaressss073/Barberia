@@ -54,51 +54,106 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     </div>
   </div>
 
-  <!-- Create user modal -->
+  <!-- Add user modal -->
   <div id="modal-create" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
     <div class="bg-base-900 border border-base-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl">
-      <h3 class="text-base-100 font-semibold text-lg mb-5">Nuevo Usuario</h3>
-      <div class="space-y-4">
+      <h3 class="text-base-100 font-semibold text-lg mb-4">Agregar Usuario</h3>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 bg-base-800/60 rounded-xl p-1 mb-5">
+        <button id="tab-auto" class="modal-tab flex-1 py-1.5 text-sm rounded-lg font-medium transition-colors bg-base-700 text-base-100">
+          Buscar cuenta existente
+        </button>
+        <button id="tab-manual" class="modal-tab flex-1 py-1.5 text-sm rounded-lg font-medium transition-colors text-base-400 hover:text-base-100">
+          Crear nuevo usuario
+        </button>
+      </div>
+
+      <!-- Modo automático -->
+      <div id="panel-auto" class="space-y-4">
+        <p class="text-xs text-base-500">Escribe el email de alguien que ya tiene cuenta en la plataforma para vincularla a tu barbería.</p>
+        <div class="flex gap-2">
+          <input id="lookup-email" type="email" placeholder="email@ejemplo.com"
+            class="flex-1 bg-base-950 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm" />
+          <button id="btn-lookup" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700 shrink-0">Buscar</button>
+        </div>
+        <div id="lookup-result" class="hidden rounded-xl border border-base-700 bg-base-800/40 p-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <div id="lookup-avatar" class="size-9 rounded-full bg-accent-900/50 flex items-center justify-center text-accent-400 font-semibold text-sm shrink-0"></div>
+            <div>
+              <p id="lookup-name" class="text-base-100 font-medium text-sm"></p>
+              <p id="lookup-email-display" class="text-base-500 text-xs"></p>
+            </div>
+          </div>
+          <input type="hidden" id="lookup-user-id" />
+          <div>
+            <label class="text-xs uppercase tracking-widest text-base-500 block mb-2">Asignar rol</label>
+            <div class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" class="assign-role-check rounded" value="BARBER" />
+                <span class="text-sm text-base-300">Barbero</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" class="assign-role-check rounded" value="RECEPTIONIST" />
+                <span class="text-sm text-base-300">Recepcionista</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" class="assign-role-check rounded" value="ADMIN" />
+                <span class="text-sm text-base-300">Administrador</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div id="lookup-not-found" class="hidden text-sm text-red-400">No se encontró ningún usuario con ese email.</div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button id="create-close-auto" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+          <button id="assign-submit" disabled class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 disabled:opacity-40 disabled:cursor-not-allowed">Vincular</button>
+        </div>
+      </div>
+
+      <!-- Modo manual -->
+      <div id="panel-manual" class="hidden space-y-4">
+        <p class="text-xs text-base-500">Crea una cuenta nueva. El usuario podrá cambiar su contraseña más adelante.</p>
         <div>
           <label class="text-xs uppercase tracking-widest text-base-500">Nombre completo *</label>
           <input id="u-fullname" type="text" placeholder="Nombre completo"
-            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            class="mt-1 bg-base-950 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
         </div>
         <div>
           <label class="text-xs uppercase tracking-widest text-base-500">Email *</label>
           <input id="u-email" type="email" placeholder="usuario@ejemplo.com"
-            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            class="mt-1 bg-base-950 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
         </div>
         <div>
-          <label class="text-xs uppercase tracking-widest text-base-500">Contraseña *</label>
+          <label class="text-xs uppercase tracking-widest text-base-500">Contraseña temporal *</label>
           <input id="u-password" type="password" placeholder="Mínimo 8 caracteres"
-            class="mt-1 bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+            class="mt-1 bg-base-950 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
         </div>
         <div>
           <label class="text-xs uppercase tracking-widest text-base-500 block mb-2">Roles *</label>
           <div class="flex flex-wrap gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" class="role-check rounded" value="ADMIN" />
-              <span class="text-sm text-base-300">Administrador</span>
+              <input type="checkbox" class="role-check rounded" value="BARBER" />
+              <span class="text-sm text-base-300">Barbero</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" class="role-check rounded" value="RECEPTIONIST" />
               <span class="text-sm text-base-300">Recepcionista</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" class="role-check rounded" value="BARBER" />
-              <span class="text-sm text-base-300">Barbero</span>
+              <input type="checkbox" class="role-check rounded" value="ADMIN" />
+              <span class="text-sm text-base-300">Administrador</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" class="role-check rounded" value="CUSTOMER" checked />
+              <input type="checkbox" class="role-check rounded" value="CUSTOMER" />
               <span class="text-sm text-base-300">Cliente</span>
             </label>
           </div>
         </div>
-      </div>
-      <div class="flex justify-end gap-2 mt-6">
-        <button id="create-close" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
-        <button id="create-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Crear Usuario</button>
+        <div class="flex justify-end gap-2 pt-1">
+          <button id="create-close-manual" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</button>
+          <button id="create-submit" class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">Crear Usuario</button>
+        </div>
       </div>
     </div>
   </div>
@@ -281,16 +336,107 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
   document.getElementById("btn-prev").addEventListener("click", () => { if (page > 1) { page--; loadUsers(); } });
   document.getElementById("btn-next").addEventListener("click", () => { if (page < totalPages) { page++; loadUsers(); } });
 
-  // Create user
-  document.getElementById("btn-open-create").addEventListener("click", () => {
+  // Modal open/close helpers
+  function openCreateModal() {
+    // Reset auto tab state
+    document.getElementById("lookup-email").value = "";
+    document.getElementById("lookup-result").classList.add("hidden");
+    document.getElementById("lookup-not-found").classList.add("hidden");
+    document.getElementById("lookup-user-id").value = "";
+    document.getElementById("assign-submit").disabled = true;
+    document.querySelectorAll(".assign-role-check").forEach(cb => cb.checked = false);
+    // Reset manual tab state
+    document.getElementById("u-fullname").value = "";
+    document.getElementById("u-email").value = "";
+    document.getElementById("u-password").value = "";
+    document.querySelectorAll(".role-check").forEach(cb => cb.checked = false);
+    // Show auto tab by default
+    switchTab("auto");
     document.getElementById("modal-create").classList.remove("hidden");
-  });
-  document.getElementById("create-close").addEventListener("click", () => {
+  }
+
+  function closeCreateModal() {
     document.getElementById("modal-create").classList.add("hidden");
-  });
+  }
+
+  function switchTab(tab) {
+    const tabAuto = document.getElementById("tab-auto");
+    const tabManual = document.getElementById("tab-manual");
+    const panelAuto = document.getElementById("panel-auto");
+    const panelManual = document.getElementById("panel-manual");
+    if (tab === "auto") {
+      tabAuto.classList.add("bg-base-700", "text-base-100");
+      tabAuto.classList.remove("text-base-400");
+      tabManual.classList.remove("bg-base-700", "text-base-100");
+      tabManual.classList.add("text-base-400");
+      panelAuto.classList.remove("hidden");
+      panelManual.classList.add("hidden");
+    } else {
+      tabManual.classList.add("bg-base-700", "text-base-100");
+      tabManual.classList.remove("text-base-400");
+      tabAuto.classList.remove("bg-base-700", "text-base-100");
+      tabAuto.classList.add("text-base-400");
+      panelManual.classList.remove("hidden");
+      panelAuto.classList.add("hidden");
+    }
+  }
+
+  document.getElementById("btn-open-create").addEventListener("click", openCreateModal);
+  document.getElementById("create-close-auto").addEventListener("click", closeCreateModal);
+  document.getElementById("create-close-manual").addEventListener("click", closeCreateModal);
   document.getElementById("modal-create").addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
+    if (e.target === e.currentTarget) closeCreateModal();
   });
+
+  document.getElementById("tab-auto").addEventListener("click", () => switchTab("auto"));
+  document.getElementById("tab-manual").addEventListener("click", () => switchTab("manual"));
+
+  // Lookup existing user
+  document.getElementById("btn-lookup").addEventListener("click", async () => {
+    const email = document.getElementById("lookup-email").value.trim();
+    if (!email) { window.toast("Ingresa un email", "error"); return; }
+    const result = document.getElementById("lookup-result");
+    const notFound = document.getElementById("lookup-not-found");
+    result.classList.add("hidden");
+    notFound.classList.add("hidden");
+    document.getElementById("assign-submit").disabled = true;
+    try {
+      const data = await apiFetch(`/users/lookup?email=${encodeURIComponent(email)}`);
+      if (!data) {
+        notFound.classList.remove("hidden");
+        return;
+      }
+      document.getElementById("lookup-user-id").value = data.id;
+      document.getElementById("lookup-name").textContent = data.fullName;
+      document.getElementById("lookup-email-display").textContent = data.email;
+      document.getElementById("lookup-avatar").textContent = data.fullName[0].toUpperCase();
+      result.classList.remove("hidden");
+      document.getElementById("assign-submit").disabled = false;
+    } catch {
+      notFound.classList.remove("hidden");
+    }
+  });
+
+  document.getElementById("lookup-email").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("btn-lookup").click();
+  });
+
+  // Assign existing user as staff
+  document.getElementById("assign-submit").addEventListener("click", async () => {
+    const userId = document.getElementById("lookup-user-id").value;
+    const selectedRoles = Array.from(document.querySelectorAll(".assign-role-check:checked")).map(cb => cb.value);
+    if (selectedRoles.length === 0) {
+      window.toast("Selecciona al menos un rol", "error"); return;
+    }
+    try {
+      await apiFetch(`/users/${userId}/assign-staff`, { method: "POST", body: JSON.stringify({ roles: selectedRoles }) });
+      window.toast("Usuario vinculado a la barbería", "success");
+      closeCreateModal();
+      loadUsers();
+    } catch (err) { window.toast(err.message ?? "Error al vincular usuario", "error"); }
+  });
+
+  // Create new user (manual)
   document.getElementById("create-submit").addEventListener("click", async () => {
     const fullName = document.getElementById("u-fullname").value.trim();
     const email = document.getElementById("u-email").value.trim();
@@ -305,7 +451,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     try {
       await apiFetch("/users", { method: "POST", body: JSON.stringify({ fullName, email, password, roles: selectedRoles }) });
       window.toast("Usuario creado", "success");
-      document.getElementById("modal-create").classList.add("hidden");
+      closeCreateModal();
       loadUsers();
     } catch (err) { window.toast(err.message ?? "Error al crear usuario", "error"); }
   });

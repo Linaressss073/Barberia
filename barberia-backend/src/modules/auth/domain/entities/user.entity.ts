@@ -129,6 +129,11 @@ export class User extends AggregateRoot<UserProps> {
     this.props.updatedAt = new Date();
   }
 
+  setTenant(tenantId: string | null): void {
+    this.props.tenantId = tenantId;
+    this.props.updatedAt = new Date();
+  }
+
   enable(): void {
     this.props.status = UserStatus.Active;
     this.props.updatedAt = new Date();

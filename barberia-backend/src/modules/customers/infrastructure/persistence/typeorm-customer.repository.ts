@@ -30,9 +30,10 @@ export class MongoCustomerRepository implements CustomerRepository {
     return doc ? CustomerMapper.toDomain(doc) : null;
   }
 
-  /** userId es único por perfil; no filtrar por tenant (evita null si JWT/cliente difieren en tenantId tras migraciones). */
   async findByUserId(userId: UniqueEntityId): Promise<Customer | null> {
-    const doc = await this.model.findOne({ userId: userId.value, deletedAt: null });
+    const query: Record<string, unknown> = { userId: userId.value, deletedAt: null };
+    if (this.tenantId) query['tenantId'] = this.tenantId;
+    const doc = await this.model.findOne(query);
     return doc ? CustomerMapper.toDomain(doc) : null;
   }
 

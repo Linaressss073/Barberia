@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -31,6 +32,7 @@ import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.de
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from '@modules/auth/presentation/guards/roles.guard';
 import { PaginationQueryDto } from '@shared/pagination/pagination.dto';
+import { requestContext } from '@core/context/request-context';
 import { BookAppointmentDto, CancelAppointmentDto } from '../application/dto/appointment.dto';
 import { BookAppointmentUseCase } from '../application/book-appointment.use-case';
 import { CancelAppointmentUseCase } from '../application/cancel-appointment.use-case';
@@ -38,6 +40,7 @@ import { TransitionAppointmentUseCase } from '../application/transition-appointm
 import { ListAppointmentsUseCase } from '../application/list-appointments.use-case';
 import { GetAvailabilityUseCase } from '../application/availability.use-case';
 import { RateAppointmentUseCase } from '../application/rate-appointment.use-case';
+import { EnsureCustomerProfileUseCase } from '@modules/customers/application/use-cases/ensure-customer-profile.use-case';
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { BarberDoc, BarberDocument } from '@modules/barbers/infrastructure/persistence/barber.schema';
 
@@ -69,6 +72,7 @@ export class AppointmentsController {
     private readonly listUC: ListAppointmentsUseCase,
     private readonly availabilityUC: GetAvailabilityUseCase,
     private readonly rateUC: RateAppointmentUseCase,
+    private readonly ensureCustomerUC: EnsureCustomerProfileUseCase,
     @InjectModel(CustomerDoc.name) private readonly customers: Model<CustomerDocument>,
     @InjectModel(BarberDoc.name) private readonly barbers: Model<BarberDocument>,
   ) {}
@@ -98,9 +102,12 @@ export class AppointmentsController {
         const barber = await this.barbers.findOne({ userId: user.sub });
         barberId = barber?._id ?? undefined;
       } else {
-        // Customer: scope to their own profile
-        const customer = await this.customers.findOne({ userId: user.sub, deletedAt: null });
-        customerId = customer?._id ?? 'none'; // 'none' returns empty if no profile yet
+        // Customer: scope to their own profile within the current tenant
+        const tenantId = requestContext.get()?.tenantId ?? null;
+        const customerQuery: Record<string, unknown> = { userId: user.sub, deletedAt: null };
+        if (tenantId) customerQuery['tenantId'] = tenantId;
+        const customer = await this.customers.findOne(customerQuery);
+        customerId = customer?._id ?? 'none';
       }
     }
 
@@ -118,9 +125,21 @@ export class AppointmentsController {
   @Post()
   @Roles(Role.Admin, Role.Receptionist, Role.Customer)
   @HttpCode(HttpStatus.CREATED)
-  book(@Body() dto: BookAppointmentDto, @CurrentUser() user: AuthenticatedUser) {
+  async book(@Body() dto: BookAppointmentDto, @CurrentUser() user: AuthenticatedUser) {
+    let customerId = dto.customerId;
+
+    // For customers without explicit customerId, auto-resolve or create their profile
+    if (!customerId && user.roles.includes(Role.Customer)) {
+      const profile = await this.ensureCustomerUC.execute(user.sub);
+      customerId = profile.id.value;
+    }
+
+    if (!customerId) {
+      throw new BadRequestException('customerId is required for admin/receptionist bookings');
+    }
+
     return this.bookUC.execute({
-      customerId: dto.customerId,
+      customerId,
       barberId: dto.barberId,
       scheduledAt: dto.scheduledAt,
       serviceIds: dto.serviceIds,

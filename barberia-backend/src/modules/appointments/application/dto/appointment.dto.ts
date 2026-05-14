@@ -19,7 +19,12 @@ export enum AppointmentSourceDto {
 }
 
 export class BookAppointmentDto {
-  @ApiProperty() @IsUUID() customerId!: string;
+  @ApiPropertyOptional({
+    description: 'ID del perfil de cliente. Si no se provee, se resuelve automáticamente del usuario autenticado.',
+  })
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
   @ApiProperty() @IsUUID() barberId!: string;
   @ApiProperty() @Type(() => Date) @IsDate() scheduledAt!: Date;
   @ApiProperty({ type: [String] })

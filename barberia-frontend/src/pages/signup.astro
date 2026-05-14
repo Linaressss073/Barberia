@@ -22,7 +22,7 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           data-signup-subtitle
           class="mt-4 text-base-400 font-medium text-balance"
         >
-          Únete y comienza a reservar citas en tu barbería favorita.
+          Únete y comienza a reservar citas en cualquier barbería.
         </Text>
         <p
           id="plan-notice"
@@ -30,30 +30,6 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         >
           <span id="plan-notice-text"></span>
         </p>
-
-        <div id="tenant-wrap" class="mt-8 space-y-2">
-          <label for="tenant-id" class="text-sm text-base-400 font-medium">
-            Barbería donde reservarás <span class="text-accent-500">*</span>
-          </label>
-          <select
-            id="tenant-id"
-            name="tenantId"
-            required
-            class="block w-full h-10 px-4 py-2 text-sm text-base-100 bg-base-900 border border-transparent rounded-lg appearance-none ring-1 ring-base-700 focus:outline-none focus:ring-accent-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-base-950 sm:text-sm"
-          >
-            <option value="">Cargando barberías…</option>
-          </select>
-          <p class="text-xs text-base-500">
-            ¿Ya tienes cuenta?
-            <a class="text-accent-400 hover:text-accent-300" href="/login">Inicia sesión</a>
-            ·
-            <a class="text-accent-400 hover:text-accent-300" href="/explore">Ver lista de barberías</a>
-          </p>
-        </div>
-
-        <a href="/" class="inline-flex items-center gap-1 text-xs text-base-500 hover:text-accent-400 mt-2 transition-colors">
-          ← Ver planes y funciones
-        </a>
 
         <div
           id="form-error"
@@ -181,13 +157,11 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 <script>
   import { isAuthenticated, saveSession } from "@/lib/auth";
   import { getApiV1Url } from "@/lib/config";
-  import { apiFetchPublic } from "@/lib/api";
-  import { setSelectedTenantId } from "@/lib/tenant-context";
 
   function getRoleRedirect(roles: string[]): string {
     const r = roles.map(x => x.toUpperCase());
     if (r.includes("ADMIN") || r.includes("RECEPTIONIST")) return "/dashboard/";
-    return "/dashboard/appointments";
+    return "/explore";
   }
 
   if (isAuthenticated()) {
@@ -210,19 +184,12 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
       ? rawPlan
       : null;
 
-  const tenantFromUrl = sp.get("tenant")?.trim() ?? "";
-
   const planField = document.getElementById("plan-field") as HTMLInputElement | null;
   const businessWrap = document.getElementById("business-wrap");
   const businessNameInput = document.getElementById("business-name") as HTMLInputElement | null;
   const planNotice = document.getElementById("plan-notice");
   const planNoticeText = document.getElementById("plan-notice-text");
   const subEl = document.querySelector("[data-signup-subtitle]");
-  const tenantWrap = document.getElementById("tenant-wrap");
-  const tenantSelect = document.getElementById("tenant-id") as HTMLSelectElement | null;
-
-  const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   if (selectedPlan && planField && businessWrap && businessNameInput && planNotice && planNoticeText) {
     planField.value = selectedPlan;
@@ -234,60 +201,13 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
     if (subEl)
       subEl.textContent =
         "Crea tu cuenta de administrador y configura tu negocio en minutos.";
-    tenantWrap?.classList.add("hidden");
-    if (tenantSelect) {
-      tenantSelect.required = false;
-      tenantSelect.disabled = true;
-    }
   }
 
-  type TenantItem = { id: string; name: string; slug: string };
-
-  if (!selectedPlan && tenantSelect && tenantWrap) {
-    (async () => {
-      try {
-        const list = await apiFetchPublic<TenantItem[]>("/tenants/discover");
-        tenantSelect.innerHTML = "";
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent =
-          list.length === 0 ? "No hay barberías disponibles" : "Selecciona una barbería…";
-        tenantSelect.appendChild(placeholder);
-        for (const t of list) {
-          const opt = document.createElement("option");
-          opt.value = t.id;
-          opt.textContent = t.name;
-          tenantSelect.appendChild(opt);
-        }
-        if (UUID_RE.test(tenantFromUrl) && list.some((x) => x.id === tenantFromUrl)) {
-          tenantSelect.value = tenantFromUrl;
-        }
-        if (list.length === 0) {
-          tenantSelect.required = false;
-          tenantSelect.disabled = true;
-        }
-      } catch {
-        tenantSelect.innerHTML =
-          '<option value="">No se pudieron cargar las barberías</option>';
-        tenantSelect.required = false;
-        tenantSelect.disabled = true;
-      }
-    })();
-  }
-
-  const form = document.getElementById(
-    "signup-form"
-  ) as HTMLFormElement | null;
+  const form = document.getElementById("signup-form") as HTMLFormElement | null;
   const errorBox = document.getElementById("form-error") as HTMLElement | null;
-  const errorText = document.getElementById(
-    "form-error-text"
-  ) as HTMLElement | null;
-  const submitBtn = document.getElementById(
-    "submit-btn"
-  ) as HTMLButtonElement | null;
-  const agreement = document.getElementById(
-    "agreement"
-  ) as HTMLInputElement | null;
+  const errorText = document.getElementById("form-error-text") as HTMLElement | null;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement | null;
+  const agreement = document.getElementById("agreement") as HTMLInputElement | null;
 
   function showError(msg: string) {
     if (errorText) errorText.textContent = msg;
@@ -327,20 +247,6 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
       return;
     }
 
-    const tenantEl = document.getElementById("tenant-id") as HTMLSelectElement | null;
-    if (!planFromForm) {
-      if (!tenantEl || tenantEl.disabled) {
-        showError(
-          "No hay barberías disponibles o no se pudieron cargar. Prueba más tarde o crea tu negocio desde los planes.",
-        );
-        return;
-      }
-      if (!(tenantEl.value ?? "").trim()) {
-        showError("Selecciona la barbería donde quieres registrarte.");
-        return;
-      }
-    }
-
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = "Creando cuenta…";
@@ -353,8 +259,6 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
       if (planFromForm && businessName) {
         regBody.businessName = businessName;
         regBody.plan = planFromForm;
-      } else {
-        regBody.tenantId = (tenantEl?.value ?? "").trim();
       }
 
       const regRes = await fetch(`${apiBase}/auth/register`, {
@@ -364,9 +268,7 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
       });
 
       if (!regRes.ok) {
-        const err = (await regRes.json().catch(() => ({}))) as {
-          message?: string;
-        };
+        const err = (await regRes.json().catch(() => ({}))) as { message?: string };
         throw new Error(err.message ?? "Error al crear la cuenta");
       }
 
@@ -406,9 +308,6 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         body.data.tokens.accessToken,
         body.data.tokens.refreshToken
       );
-      if (!planFromForm && regBody.tenantId) {
-        setSelectedTenantId(regBody.tenantId);
-      }
       window.location.href = getRoleRedirect(body.data.user.roles);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Error al crear la cuenta");

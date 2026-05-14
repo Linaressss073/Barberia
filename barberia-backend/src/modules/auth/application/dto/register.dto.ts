@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'cliente@barberia.com' })
@@ -19,7 +19,10 @@ export class RegisterDto {
   @MaxLength(128)
   password!: string;
 
-  @ApiPropertyOptional({ example: 'Barbería El Corte' })
+  @ApiPropertyOptional({
+    example: 'Barbería El Corte',
+    description: 'Solo para dueños: nombre del negocio. Crea un tenant automáticamente con rol ADMIN.',
+  })
   @IsOptional()
   @IsString()
   @MinLength(2)
@@ -30,12 +33,4 @@ export class RegisterDto {
   @IsOptional()
   @IsIn(['TRIAL', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE'])
   plan?: 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE';
-
-  @ApiPropertyOptional({
-    description:
-      'Obligatorio al registrarse como cliente (sin businessName). ID de la barbería (tenant) existente y activa.',
-  })
-  @IsOptional()
-  @IsUUID()
-  tenantId?: string;
 }

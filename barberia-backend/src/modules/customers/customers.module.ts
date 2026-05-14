@@ -31,6 +31,6 @@ import { CustomersController } from './presentation/controllers/customers.contro
     AddLoyaltyPointsUseCase,
     RedeemLoyaltyPointsUseCase,
   ],
-  exports: [CUSTOMER_REPOSITORY, MongooseModule],
+  exports: [CUSTOMER_REPOSITORY, EnsureCustomerProfileUseCase, MongooseModule],
 })
 export class CustomersModule {}

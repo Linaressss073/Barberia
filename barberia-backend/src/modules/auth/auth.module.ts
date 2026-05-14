@@ -6,7 +6,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserDoc, UserSchema } from './infrastructure/persistence/user.schema';
 import { RefreshTokenDoc, RefreshTokenSchema } from './infrastructure/persistence/refresh-token.schema';
 import { JwtDenylistDoc, JwtDenylistSchema } from './infrastructure/persistence/jwt-denylist.schema';
-import { CustomerDoc, CustomerSchema } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { TenantDoc, TenantSchema } from '@modules/tenants/infrastructure/persistence/tenant.schema';
 import { MongoUserRepository } from './infrastructure/persistence/typeorm-user.repository';
 import { MongoRefreshTokenRepository } from './infrastructure/persistence/typeorm-refresh-token.repository';
@@ -34,7 +33,6 @@ import { AuthController } from './presentation/controllers/auth.controller';
       { name: UserDoc.name, schema: UserSchema },
       { name: RefreshTokenDoc.name, schema: RefreshTokenSchema },
       { name: JwtDenylistDoc.name, schema: JwtDenylistSchema },
-      { name: CustomerDoc.name, schema: CustomerSchema },
       { name: TenantDoc.name, schema: TenantSchema },
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),

@@ -10,7 +10,6 @@ import { HashedPassword } from '../../domain/value-objects/hashed-password.vo';
 import { RawPassword } from '../../domain/value-objects/raw-password.vo';
 import { USER_REPOSITORY, UserRepository } from '../../domain/repositories/user.repository';
 import { PASSWORD_HASHER, PasswordHasher } from '../ports/password-hasher.port';
-import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { TenantDoc, TenantDocument, TenantPlan, PLAN_LIMITS } from '@modules/tenants/infrastructure/persistence/tenant.schema';
 
 export interface RegisterUserInput {
@@ -28,7 +27,6 @@ export class RegisterUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasher,
-    @InjectModel(CustomerDoc.name) private readonly customerModel: Model<CustomerDocument>,
     @InjectModel(TenantDoc.name) private readonly tenantModel: Model<TenantDocument>,
   ) {}
 
@@ -72,22 +70,10 @@ export class RegisterUserUseCase {
       resolvedTenantId = tenantId;
       resolvedRoles = [Role.Admin];
     } else {
+      // Customer registration — no barbershop required at signup.
+      // Customer profiles are created lazily on first booking at each barbershop.
       resolvedRoles = input.roles && input.roles.length > 0 ? input.roles : [Role.Customer];
-      if (!input.tenantId) {
-        throw new InvalidArgument('Debes indicar en qué barbería deseas registrarte.', {
-          field: 'tenantId',
-        });
-      }
-      const tenant = await this.tenantModel.findOne({
-        _id: input.tenantId,
-        active: true,
-      });
-      if (!tenant) {
-        throw new InvalidArgument('La barbería seleccionada no existe o no está disponible.', {
-          field: 'tenantId',
-        });
-      }
-      resolvedTenantId = input.tenantId;
+      resolvedTenantId = null;
     }
 
     const user = User.create({
@@ -99,24 +85,6 @@ export class RegisterUserUseCase {
     });
 
     await this.users.save(user);
-
-    if (resolvedRoles.includes(Role.Customer)) {
-      try {
-        await this.customerModel.create({
-          _id: uuidv4(),
-          userId: user.id.value,
-          fullName: input.fullName,
-          phone: null,
-          birthdate: null,
-          loyaltyPoints: 0,
-          preferences: {},
-          deletedAt: null,
-          tenantId: resolvedTenantId,
-        });
-      } catch {
-        // Customer creation is best-effort — user account already saved
-      }
-    }
 
     return user;
   }

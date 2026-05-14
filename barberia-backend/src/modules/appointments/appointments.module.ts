@@ -14,6 +14,7 @@ import { GetAvailabilityUseCase } from './application/availability.use-case';
 import { RateAppointmentUseCase } from './application/rate-appointment.use-case';
 import { AppointmentsController } from './presentation/appointments.controller';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { CustomersModule } from '@modules/customers/customers.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
       { name: UserDoc.name, schema: UserSchema },
     ]),
     NotificationsModule,
+    CustomersModule,
   ],
   controllers: [AppointmentsController],
   providers: [

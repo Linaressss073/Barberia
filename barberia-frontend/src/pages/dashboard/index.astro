@@ -124,11 +124,27 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       .catch(() => {});
   } else {
     show("view-customer");
-    apiFetch("/customers/me")
-      .then((customer) => {
-        document.getElementById("loyalty-pts").textContent =
-          customer ? String(customer.loyaltyPoints) : "0";
-      })
-      .catch(() => { document.getElementById("loyalty-pts").textContent = "0"; });
+
+    import("@/lib/tenant-context").then(({ getSelectedTenantId }) => {
+      const tenantId = getSelectedTenantId();
+
+      // Patch "Reservar cita" link to go through /explore if no barbershop selected
+      const bookLinks = document.querySelectorAll<HTMLAnchorElement>('a[href="/dashboard/book"]');
+      bookLinks.forEach(a => {
+        if (!tenantId) a.href = "/explore";
+      });
+
+      if (!tenantId) {
+        document.getElementById("loyalty-pts").textContent = "—";
+        return;
+      }
+
+      apiFetch("/customers/me")
+        .then((customer) => {
+          document.getElementById("loyalty-pts").textContent =
+            customer ? String((customer as { loyaltyPoints: number }).loyaltyPoints) : "0";
+        })
+        .catch(() => { document.getElementById("loyalty-pts").textContent = "0"; });
+    });
   }
 </script>

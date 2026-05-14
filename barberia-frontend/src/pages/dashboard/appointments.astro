@@ -131,6 +131,7 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 <script>
   import { getUser } from "@/lib/auth";
   import { apiFetch } from "@/lib/api";
+  import { getSelectedTenantId } from "@/lib/tenant-context";
 
   const user = getUser();
   const roles = user.roles.map(r => r.toUpperCase());
@@ -143,7 +144,11 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
   } else if (isCustomer) {
     document.getElementById("day-navigator").classList.add("hidden");
     document.getElementById("customer-tabs").classList.remove("hidden");
-    document.getElementById("btn-new-appointment").classList.remove("hidden");
+
+    const tenantId = getSelectedTenantId();
+    const newApptBtn = document.getElementById("btn-new-appointment") as HTMLAnchorElement;
+    newApptBtn.classList.remove("hidden");
+    if (!tenantId) newApptBtn.href = "/explore";
   }
 
   let currentDate = new Date();
@@ -199,6 +204,17 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     try {
       let data;
       if (isCustomer) {
+        if (!getSelectedTenantId()) {
+          loading.classList.add("hidden");
+          empty.textContent = "Selecciona una barbería para ver tus citas.";
+          empty.classList.remove("hidden");
+          const link = document.createElement("a");
+          link.href = "/explore";
+          link.className = "mt-2 inline-block text-sm text-accent-400 hover:text-accent-300";
+          link.textContent = "Explorar barberías →";
+          empty.after(link);
+          return;
+        }
         const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
         const qs = customerTab === "upcoming"
           ? `from=${startOfToday.toISOString()}`

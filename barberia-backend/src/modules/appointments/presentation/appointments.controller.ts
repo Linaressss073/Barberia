@@ -130,6 +130,10 @@ export class AppointmentsController {
 
     // For customers without explicit customerId, auto-resolve or create their profile
     if (!customerId && user.roles.includes(Role.Customer)) {
+      const tenantId = requestContext.get()?.tenantId;
+      if (!tenantId) {
+        throw new BadRequestException('Debes seleccionar una barbería antes de reservar. Incluye el header X-Tenant-Id.');
+      }
       const profile = await this.ensureCustomerUC.execute(user.sub);
       customerId = profile.id.value;
     }

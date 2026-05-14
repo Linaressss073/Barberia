@@ -98,7 +98,10 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
   function getRoleRedirect(roles: string[]): string {
     const r = roles.map(x => x.toUpperCase());
     if (r.includes("ADMIN") || r.includes("RECEPTIONIST")) return "/dashboard/";
-    return "/dashboard/appointments";
+    if (r.includes("BARBER")) return "/dashboard/appointments";
+    // Customers: go to /explore if no barbershop saved, otherwise appointments
+    const tid = localStorage.getItem("bb_selected_tenant_id");
+    return tid ? "/dashboard/appointments" : "/explore";
   }
 
   if (isAuthenticated()) {

@@ -4,6 +4,15 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 <DashboardLayout title="Reservar Cita" section="book">
 
   <div class="max-w-3xl mx-auto space-y-6">
+    <!-- Barbershop context banner (customers only) -->
+    <div id="tenant-banner" class="hidden rounded-xl border border-base-800 bg-base-900/60 px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-sm text-base-300">
+        <svg class="size-4 text-accent-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Reservando en <strong id="tenant-name" class="text-base-100"></strong></span>
+      </div>
+      <a href="/explore" class="text-xs text-accent-400 hover:text-accent-300 shrink-0">Cambiar →</a>
+    </div>
+
     <!-- Step indicator -->
     <div class="flex items-center gap-2">
       <div id="step-item-1" class="flex items-center gap-2">
@@ -127,11 +136,18 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 <script>
   import { getUser } from "@/lib/auth";
   import { apiFetch } from "@/lib/api";
+  import { getSelectedTenantId } from "@/lib/tenant-context";
 
   const user = getUser();
   const roles = user.roles.map(r => r.toUpperCase());
   const isStaff = roles.some(r => ["ADMIN","RECEPTIONIST","BARBER"].includes(r));
   const isCustomer = roles.includes("CUSTOMER") && !isStaff;
+
+  // Customers must have a barbershop selected; redirect to /explore otherwise
+  if (isCustomer && !getSelectedTenantId()) {
+    window.location.href = "/explore";
+    throw new Error("redirect");
+  }
 
   let currentStep = 1;
   const state = {
@@ -406,26 +422,9 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     if (isSubmitting) return;
     isSubmitting = true;
 
-    let customerId = null;
-    if (isCustomer) {
-      try {
-        const me = await apiFetch("/customers/me");
-        if (!me || !(me as { id?: string }).id) {
-          window.toast(
-            "Tu cuenta no tiene perfil de cliente vinculado. Contacta a la barbería o vuelve a registrarte como cliente.",
-            "error",
-          );
-          isSubmitting = false;
-          return;
-        }
-        customerId = (me as { id: string }).id;
-      } catch {
-        window.toast("No se pudo obtener el perfil de cliente. Comprueba la conexión o vuelve a iniciar sesión.", "error");
-        isSubmitting = false;
-        return;
-      }
-    } else {
-      customerId = document.getElementById("selected-customer-id").value;
+    // Staff must select a customer explicitly; customers are auto-resolved by the backend
+    if (!isCustomer) {
+      const customerId = document.getElementById("selected-customer-id").value;
       if (!customerId) {
         window.toast("Selecciona un cliente para la cita", "error");
         isSubmitting = false;
@@ -437,25 +436,49 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     btn.disabled = true;
     btn.textContent = "Reservando…";
     try {
-      const body = {
-        customerId,
+      const body: Record<string, unknown> = {
         barberId: state.selectedBarberId,
         scheduledAt: new Date(state.selectedSlot).toISOString(),
         serviceIds: state.selectedServices.map(s => s.id),
       };
-      const notes = document.getElementById("apt-notes").value.trim();
+
+      // Staff must send customerId; customers let the backend auto-resolve/create the profile
+      if (!isCustomer) {
+        body.customerId = document.getElementById("selected-customer-id").value;
+      }
+
+      const notes = (document.getElementById("apt-notes") as HTMLTextAreaElement).value.trim();
       if (notes) body.notes = notes;
 
       await apiFetch("/appointments", { method: "POST", body: JSON.stringify(body) });
       window.toast("Cita reservada correctamente", "success");
       setTimeout(() => { window.location.href = "/dashboard/appointments"; }, 1200);
     } catch (err) {
-      window.toast(err.message ?? "Error al reservar cita", "error");
+      window.toast((err as Error).message ?? "Error al reservar cita", "error");
       btn.disabled = false;
       btn.textContent = "Reservar Cita";
       isSubmitting = false;
     }
   });
+
+  // Show barbershop banner for customers
+  if (isCustomer) {
+    const tenantId = getSelectedTenantId();
+    const banner = document.getElementById("tenant-banner");
+    const nameEl = document.getElementById("tenant-name");
+    if (banner && tenantId) {
+      banner.classList.remove("hidden");
+      // Try to resolve the name from the discover list
+      import("@/lib/api").then(({ apiFetchPublic }) =>
+        apiFetchPublic<{ id: string; name: string; slug: string }[]>("/tenants/discover")
+          .then(list => {
+            const t = list.find(x => x.id === tenantId);
+            if (nameEl) nameEl.textContent = t?.name ?? tenantId;
+          })
+          .catch(() => { if (nameEl) nameEl.textContent = tenantId; })
+      );
+    }
+  }
 
   loadServices();
   updateStepIndicator();

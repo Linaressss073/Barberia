@@ -161,7 +161,7 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 
       const body = (await res.json()) as {
         data: {
-          user: { id: string; email: string; fullName: string; roles: string[] };
+          user: { id: string; email: string; fullName: string; roles: string[]; tenantId?: string | null; activeTenantId?: string | null };
           tokens: { accessToken: string; refreshToken: string };
         };
       };
@@ -171,6 +171,12 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
         body.data.tokens.accessToken,
         body.data.tokens.refreshToken
       );
+
+      // Sync active tenant from login response so localStorage is always warm
+      if (body.data.user.activeTenantId) {
+        localStorage.setItem("bb_selected_tenant_id", body.data.user.activeTenantId);
+      }
+
       window.location.href = getRoleRedirect(body.data.user.roles);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Error al iniciar sesión");

@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '@core/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.decorator';
@@ -9,6 +9,7 @@ import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/use-cases/logout.use-case';
+import { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -19,6 +20,7 @@ export class AuthController {
     private readonly loginUC: LoginUseCase,
     private readonly refreshUC: RefreshTokenUseCase,
     private readonly logoutUC: LogoutUseCase,
+    private readonly getMeUC: GetMeUseCase,
   ) {}
 
   @Public()
@@ -46,6 +48,14 @@ export class AuthController {
   @ApiOkResponse({ type: AuthTokensDto })
   refresh(@Body() body: { refreshToken: string }): Promise<AuthTokensDto> {
     return this.refreshUC.execute(body.refreshToken);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Perfil del usuario autenticado + activeTenantId' })
+  me(@CurrentUser() user: AuthenticatedUser) {
+    return this.getMeUC.execute(user.sub);
   }
 
   @Post('logout')

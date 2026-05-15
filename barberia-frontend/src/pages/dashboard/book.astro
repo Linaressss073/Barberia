@@ -136,17 +136,20 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
 <script>
   import { getUser } from "@/lib/auth";
   import { apiFetch } from "@/lib/api";
-  import { getSelectedTenantId } from "@/lib/tenant-context";
+  import { getSelectedTenantId, syncActiveTenantFromServer } from "@/lib/tenant-context";
 
   const user = getUser();
   const roles = user.roles.map(r => r.toUpperCase());
   const isStaff = roles.some(r => ["ADMIN","RECEPTIONIST","BARBER"].includes(r));
   const isCustomer = roles.includes("CUSTOMER") && !isStaff;
 
-  // Customers must have a barbershop selected; redirect to /explore otherwise
+  // Customers must have a barbershop selected; try to recover from DB before redirecting
   if (isCustomer && !getSelectedTenantId()) {
-    window.location.href = "/explore";
-    throw new Error("redirect");
+    const recovered = await syncActiveTenantFromServer();
+    if (!recovered) {
+      window.location.href = "/explore";
+      throw new Error("redirect");
+    }
   }
 
   let currentStep = 1;

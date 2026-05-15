@@ -33,7 +33,7 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
 
 <script>
   import { apiFetchPublic } from "@/lib/api";
-  import { setSelectedTenantId } from "@/lib/tenant-context";
+  import { setActiveTenantWithSync } from "@/lib/tenant-context";
 
   type TenantItem = { id: string; name: string; slug: string };
 
@@ -64,12 +64,14 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           )
           .join("");
 
-        wrap.addEventListener("click", (e) => {
-          const btn = (e.target as HTMLElement).closest("button[data-tenant-id]");
+        wrap.addEventListener("click", async (e) => {
+          const btn = (e.target as HTMLElement).closest("button[data-tenant-id]") as HTMLButtonElement | null;
           if (!btn) return;
           const id = btn.getAttribute("data-tenant-id");
           if (!id) return;
-          setSelectedTenantId(id);
+          btn.disabled = true;
+          btn.textContent = "Guardando…";
+          await setActiveTenantWithSync(id);
           window.location.href = "/dashboard/book";
         });
       } catch {

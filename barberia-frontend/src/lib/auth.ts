@@ -10,6 +10,7 @@ export interface AuthUser {
   fullName: string;
   roles: string[];
   tenantId?: string | null;
+  activeTenantId?: string | null;
 }
 
 export const getAccessToken = (): string | null => localStorage.getItem(KEYS.access);

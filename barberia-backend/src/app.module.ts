@@ -34,6 +34,7 @@ import { ReportsModule } from '@modules/reports/reports.module';
 import { SettingsModule } from '@modules/settings/settings.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { TenantsModule } from '@modules/tenants/tenants.module';
+import { CustomerTenantsModule } from '@modules/customer-tenants/customer-tenants.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { TenantsModule } from '@modules/tenants/tenants.module';
     SettingsModule,
     NotificationsModule,
     TenantsModule,
+    CustomerTenantsModule,
   ],
   providers: [
     {

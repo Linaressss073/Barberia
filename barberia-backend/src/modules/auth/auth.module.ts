@@ -7,6 +7,7 @@ import { UserDoc, UserSchema } from './infrastructure/persistence/user.schema';
 import { RefreshTokenDoc, RefreshTokenSchema } from './infrastructure/persistence/refresh-token.schema';
 import { JwtDenylistDoc, JwtDenylistSchema } from './infrastructure/persistence/jwt-denylist.schema';
 import { TenantDoc, TenantSchema } from '@modules/tenants/infrastructure/persistence/tenant.schema';
+import { CustomerTenantDoc, CustomerTenantSchema } from '@modules/customer-tenants/infrastructure/persistence/customer-tenant.schema';
 import { MongoUserRepository } from './infrastructure/persistence/typeorm-user.repository';
 import { MongoRefreshTokenRepository } from './infrastructure/persistence/typeorm-refresh-token.repository';
 import { MongoJwtDenylist } from './infrastructure/persistence/typeorm-jwt-denylist';
@@ -24,6 +25,7 @@ import { RegisterUserUseCase } from './application/use-cases/register-user.use-c
 import { LoginUseCase } from './application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from './application/use-cases/refresh-token.use-case';
 import { LogoutUseCase } from './application/use-cases/logout.use-case';
+import { GetMeUseCase } from './application/use-cases/get-me.use-case';
 
 import { AuthController } from './presentation/controllers/auth.controller';
 
@@ -34,6 +36,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
       { name: RefreshTokenDoc.name, schema: RefreshTokenSchema },
       { name: JwtDenylistDoc.name, schema: JwtDenylistSchema },
       { name: TenantDoc.name, schema: TenantSchema },
+      { name: CustomerTenantDoc.name, schema: CustomerTenantSchema },
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),
@@ -50,6 +53,7 @@ import { AuthController } from './presentation/controllers/auth.controller';
     LoginUseCase,
     RefreshTokenUseCase,
     LogoutUseCase,
+    GetMeUseCase,
   ],
   exports: [USER_REPOSITORY, PASSWORD_HASHER, MongooseModule],
 })

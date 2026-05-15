@@ -6,6 +6,7 @@ export class AuthUserDto {
   @ApiProperty() fullName!: string;
   @ApiProperty({ type: [String] }) roles!: string[];
   @ApiProperty({ nullable: true }) tenantId!: string | null;
+  @ApiProperty({ nullable: true }) activeTenantId!: string | null;
 }
 
 export class AuthTokensDto {

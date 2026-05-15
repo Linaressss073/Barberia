@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { createHash, randomUUID } from 'crypto';
 import { Unauthorized } from '@core/exceptions/domain.exception';
 import { Email } from '@shared/kernel/email.vo';
@@ -11,6 +13,7 @@ import { RefreshToken } from '../../domain/entities/refresh-token.entity';
 import { PASSWORD_HASHER, PasswordHasher } from '../ports/password-hasher.port';
 import { TOKEN_SIGNER, TokenSigner } from '../ports/token-signer.port';
 import { AuthResponseDto } from '../dto/auth-response.dto';
+import { CustomerTenantDoc, CustomerTenantDocument } from '@modules/customer-tenants/infrastructure/persistence/customer-tenant.schema';
 
 export interface LoginInput {
   email: string;
@@ -24,6 +27,7 @@ export class LoginUseCase {
     @Inject(REFRESH_TOKEN_REPOSITORY) private readonly refreshTokens: RefreshTokenRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasher,
     @Inject(TOKEN_SIGNER) private readonly signer: TokenSigner,
+    @InjectModel(CustomerTenantDoc.name) private readonly ctModel: Model<CustomerTenantDocument>,
   ) {}
 
   async execute(input: LoginInput): Promise<AuthResponseDto> {
@@ -61,6 +65,13 @@ export class LoginUseCase {
       }),
     );
 
+    // For customers, resolve the active barbershop from customer_tenants
+    let activeTenantId: string | null = user.tenantId;
+    if (!user.tenantId) {
+      const active = await this.ctModel.findOne({ customerId: user.id.value, isActive: true }).lean();
+      activeTenantId = active ? (active.tenantId as string) : null;
+    }
+
     return {
       user: {
         id: user.id.value,
@@ -68,6 +79,7 @@ export class LoginUseCase {
         fullName: user.fullName,
         roles: user.roles,
         tenantId: user.tenantId,
+        activeTenantId,
       },
       tokens: {
         accessToken: access.token,

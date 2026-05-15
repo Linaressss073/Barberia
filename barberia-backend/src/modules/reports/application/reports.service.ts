@@ -140,6 +140,22 @@ export class ReportsService {
     ]);
   }
 
+  async summary(from: Date, to: Date) {
+    const [dailySales, topSvcs, occupancy, topCust, apptStats] = await Promise.all([
+      this.dailySales(from, to),
+      this.topServices(from, to, 5),
+      this.occupancyByBarber(from, to),
+      this.topCustomers(from, to, 5),
+      this.appts.aggregate([
+        { $match: { ...this.tenantFilter, scheduledAt: { $gte: from, $lt: to } } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+    ]);
+    const byStatus: Record<string, number> = {};
+    for (const s of apptStats) byStatus[s._id as string] = s.count as number;
+    return { dailySales, topServices: topSvcs, occupancy, topCustomers: topCust, appointmentsByStatus: byStatus };
+  }
+
   async topCustomers(from: Date, to: Date, limit = 10) {
     return this.sales.aggregate([
       {

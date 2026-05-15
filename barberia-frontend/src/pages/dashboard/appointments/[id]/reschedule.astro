@@ -1,0 +1,162 @@
+---
+import DashboardLayout from "@/layouts/DashboardLayout.astro";
+---
+<DashboardLayout title="Reprogramar Cita" section="appointments">
+  <div class="max-w-xl mx-auto space-y-6">
+    <div>
+      <a href="/dashboard/appointments" class="text-sm text-base-500 hover:text-accent-400 transition-colors">← Mis citas</a>
+      <h1 class="text-xl font-semibold text-base-50 mt-2">Reprogramar cita</h1>
+      <p class="text-sm text-base-400 mt-1">Se mantienen el mismo barbero y servicios. Solo cambia la fecha y hora.</p>
+    </div>
+
+    <div id="loading" class="text-sm text-base-500 py-6">Cargando cita…</div>
+    <div id="error-box" class="hidden rounded-xl border border-red-800/40 bg-red-900/20 p-4 text-sm text-red-400"></div>
+
+    <!-- Appointment summary -->
+    <div id="appt-summary" class="hidden rounded-xl border border-base-800 bg-base-900/60 p-4 space-y-2">
+      <p class="text-xs uppercase tracking-widest text-base-500 mb-1">Cita original</p>
+      <div class="flex justify-between text-sm"><span class="text-base-500">Servicios</span><span id="sum-services" class="text-base-100 text-right max-w-xs"></span></div>
+      <div class="flex justify-between text-sm"><span class="text-base-500">Barbero</span><span id="sum-barber" class="text-base-100"></span></div>
+      <div class="flex justify-between text-sm"><span class="text-base-500">Fecha actual</span><span id="sum-date" class="text-base-100"></span></div>
+    </div>
+
+    <!-- Date & time selector -->
+    <div id="date-section" class="hidden bg-base-900 border border-base-800 rounded-xl p-5 space-y-4">
+      <div class="space-y-2">
+        <label class="text-xs uppercase tracking-widest text-base-500">Nueva fecha</label>
+        <input id="new-date" type="date"
+          class="bg-base-900 ring-1 ring-base-700 text-base-100 focus:ring-accent-500 focus:ring-2 focus:outline-none rounded-lg px-3 py-2 text-sm w-full" />
+      </div>
+      <div id="slots-wrap" class="hidden space-y-2">
+        <label class="text-xs uppercase tracking-widest text-base-500">Nuevo horario</label>
+        <div id="slots-grid" class="flex flex-wrap gap-2"></div>
+        <div id="slots-empty" class="hidden text-sm text-base-500">Sin horarios disponibles.</div>
+      </div>
+      <div class="flex gap-3 justify-end pt-2">
+        <a href="/dashboard/appointments" class="px-4 py-2 text-sm rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">Cancelar</a>
+        <button id="btn-confirm" disabled
+          class="px-5 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400 disabled:opacity-40 disabled:cursor-not-allowed">
+          Confirmar cambio
+        </button>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { apiFetch } from "@/lib/api";
+
+  const apptId = window.location.pathname.split("/").at(-2)!;
+  let selectedSlot: string | null = null;
+  let originalAppt: any = null;
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleString("es-CO", { weekday:"long", day:"numeric", month:"long", hour:"2-digit", minute:"2-digit", hour12:false });
+  }
+
+  async function init() {
+    try {
+      // Load appointment data
+      const data: any = await apiFetch(`/appointments?limit=200&page=1`);
+      const items = data.items ?? [];
+      originalAppt = items.find((a: any) => a.id === apptId || a._id === apptId);
+      if (!originalAppt) throw new Error("Cita no encontrada");
+
+      if (["CANCELLED","COMPLETED","NO_SHOW"].includes(originalAppt.status)) {
+        throw new Error(`No se puede reprogramar una cita ${originalAppt.status.toLowerCase()}`);
+      }
+
+      // Populate summary
+      document.getElementById("loading")!.classList.add("hidden");
+      document.getElementById("appt-summary")!.classList.remove("hidden");
+      document.getElementById("date-section")!.classList.remove("hidden");
+      document.getElementById("sum-services")!.textContent = (originalAppt.services ?? originalAppt.items ?? []).map((s: any) => s.serviceName ?? s.name ?? s.serviceId).join(", ") || "—";
+      document.getElementById("sum-barber")!.textContent = originalAppt.barberName ?? originalAppt.barberId ?? "—";
+      document.getElementById("sum-date")!.textContent = fmtDate(originalAppt.scheduledAt);
+
+      // Init date picker
+      const dateInput = document.getElementById("new-date") as HTMLInputElement;
+      const today = new Date(); today.setHours(0,0,0,0);
+      dateInput.min = today.toISOString().split("T")[0];
+      dateInput.value = today.toISOString().split("T")[0];
+      dateInput.addEventListener("change", loadSlots);
+    } catch (err) {
+      document.getElementById("loading")!.classList.add("hidden");
+      const errBox = document.getElementById("error-box")!;
+      errBox.textContent = (err as Error).message;
+      errBox.classList.remove("hidden");
+    }
+  }
+
+  async function loadSlots() {
+    const date = (document.getElementById("new-date") as HTMLInputElement).value;
+    if (!date || !originalAppt) return;
+
+    const slotsWrap = document.getElementById("slots-wrap")!;
+    const slotsGrid = document.getElementById("slots-grid")!;
+    const slotsEmpty = document.getElementById("slots-empty")!;
+    slotsWrap.classList.remove("hidden");
+    slotsGrid.innerHTML = '<span class="text-base-500 text-sm">Buscando…</span>';
+    slotsEmpty.classList.add("hidden");
+    selectedSlot = null;
+    document.getElementById("btn-confirm")!.setAttribute("disabled", "");
+
+    const totalDuration = (originalAppt.items ?? []).reduce((s: number, it: any) => s + (it.durationMin ?? 0), 0) || 30;
+    const barberId = originalAppt.barberId ?? "any";
+
+    try {
+      const slots: any = await apiFetch(`/appointments/availability?barberId=${barberId}&date=${date}T00:00:00.000Z&durationMin=${totalDuration}`);
+      const available = Array.isArray(slots) ? slots : slots.slots ?? [];
+      slotsGrid.innerHTML = "";
+      if (available.length === 0) { slotsEmpty.classList.remove("hidden"); return; }
+      available.forEach((slot: any) => {
+        const time = slot.startsAt ?? slot;
+        const btn = document.createElement("button");
+        btn.dataset.slot = time;
+        btn.className = "slot-btn px-3 py-1.5 text-sm rounded-lg border-2 border-base-700 bg-base-800/40 text-base-300 hover:border-accent-500 hover:text-accent-400 transition-all";
+        btn.textContent = new Date(time).toLocaleTimeString("es-CO", { hour:"2-digit", minute:"2-digit", hour12:false });
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".slot-btn").forEach(b => {
+            b.classList.remove("border-accent-500","bg-accent-900/20","text-accent-400");
+            b.classList.add("border-base-700","bg-base-800/40","text-base-300");
+          });
+          selectedSlot = time;
+          btn.classList.remove("border-base-700","bg-base-800/40","text-base-300");
+          btn.classList.add("border-accent-500","bg-accent-900/20","text-accent-400");
+          document.getElementById("btn-confirm")!.removeAttribute("disabled");
+        });
+        slotsGrid.appendChild(btn);
+      });
+    } catch {
+      slotsGrid.innerHTML = '<span class="text-base-500 text-sm">Error al cargar horarios.</span>';
+    }
+  }
+
+  document.getElementById("btn-confirm")!.addEventListener("click", async () => {
+    if (!selectedSlot || !originalAppt) return;
+    const btn = document.getElementById("btn-confirm") as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = "Procesando…";
+    try {
+      // Cancel original + create new in sequence
+      await apiFetch(`/appointments/${apptId}/cancel`, { method:"PATCH", body: JSON.stringify({ reason:"Reprogramado por el cliente" }) });
+      await apiFetch("/appointments", {
+        method:"POST",
+        body: JSON.stringify({
+          barberId: originalAppt.barberId,
+          scheduledAt: new Date(selectedSlot).toISOString(),
+          serviceIds: (originalAppt.items ?? []).map((it: any) => it.serviceId),
+          notes: originalAppt.notes,
+        }),
+      });
+      window.toast("Cita reprogramada correctamente", "success");
+      setTimeout(() => { window.location.href = "/dashboard/appointments"; }, 1200);
+    } catch (err) {
+      window.toast((err as Error).message ?? "Error al reprogramar", "error");
+      btn.disabled = false;
+      btn.textContent = "Confirmar cambio";
+    }
+  });
+
+  init();
+</script>

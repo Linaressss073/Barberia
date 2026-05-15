@@ -51,11 +51,17 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           .map(
             (t) => `
       <div class="rounded-xl border border-base-800 bg-base-900/80 p-5 flex flex-col gap-3">
-        <h2 class="text-base-100 font-semibold text-lg">${escapeHtml(t.name)}</h2>
-        <p class="text-xs text-base-500">/${escapeHtml(t.slug)}</p>
+        <div>
+          <h2 class="text-base-100 font-semibold text-lg">${escapeHtml(t.name)}</h2>
+          <p class="text-xs text-base-500 mt-0.5">/${escapeHtml(t.slug)}</p>
+        </div>
         <div class="flex flex-wrap gap-2 mt-1">
-          <button type="button" data-tenant-id="${escapeAttr(t.id)}" data-action="book"
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">
+          <a href="/explore/${escapeAttr(t.id)}"
+            class="px-4 py-2 text-sm font-medium rounded-lg bg-base-800 text-base-100 hover:bg-base-700 border border-base-700">
+            Ver barbería
+          </a>
+          <button type="button" data-tenant-id="${escapeAttr(t.id)}"
+            class="btn-book px-4 py-2 text-sm font-medium rounded-lg bg-accent-500 text-base-950 hover:bg-accent-400">
             Reservar aquí
           </button>
         </div>
@@ -65,7 +71,7 @@ import Wrapper from "@/components/fundations/containers/Wrapper.astro";
           .join("");
 
         wrap.addEventListener("click", async (e) => {
-          const btn = (e.target as HTMLElement).closest("button[data-tenant-id]") as HTMLButtonElement | null;
+          const btn = (e.target as HTMLElement).closest("button.btn-book") as HTMLButtonElement | null;
           if (!btn) return;
           const id = btn.getAttribute("data-tenant-id");
           if (!id) return;

@@ -10,6 +10,7 @@ import { BarberBlockDoc, BarberBlockDocument } from '@modules/barbers/infrastruc
 export interface AvailabilitySlot {
   startsAt: string;
   endsAt: string;
+  availableBarberIds?: string[];
 }
 
 const SLOT_MINUTES = 30;
@@ -28,32 +29,77 @@ export class GetAvailabilityUseCase {
   }
 
   async execute(input: {
-    barberId: string;
+    barberId: string | 'any';
     date: Date;
     durationMin: number;
   }): Promise<AvailabilitySlot[]> {
-    const barber = await this.barbers.findOne({ _id: input.barberId, ...this.tenantQ() });
+    if (input.barberId === 'any') {
+      return this.executeAnyBarber(input.date, input.durationMin);
+    }
+    return this.executeSpecific(input.barberId, input.date, input.durationMin);
+  }
+
+  private async executeSpecific(barberId: string, date: Date, durationMin: number): Promise<AvailabilitySlot[]> {
+    const barber = await this.barbers.findOne({ _id: barberId, ...this.tenantQ() });
     if (!barber) throw new EntityNotFound('Barber not found');
     if (!barber.active) return [];
 
-    const dayStart = startOfDay(input.date);
+    const slots = await this.slotsForBarber(barber, date, durationMin);
+    return slots.map(s => ({ startsAt: s.startsAt.toISOString(), endsAt: s.endsAt.toISOString() }));
+  }
+
+  private async executeAnyBarber(date: Date, durationMin: number): Promise<AvailabilitySlot[]> {
+    const allBarbers = await this.barbers.find({ active: true, ...this.tenantQ() });
+    if (allBarbers.length === 0) return [];
+
+    // Compute slots per barber, then merge: a slot is available if ≥1 barber is free
+    const slotMap = new Map<string, { startsAt: Date; endsAt: Date; barberIds: string[] }>();
+
+    await Promise.all(allBarbers.map(async barber => {
+      const barberSlots = await this.slotsForBarber(barber, date, durationMin);
+      for (const s of barberSlots) {
+        const key = s.startsAt.toISOString();
+        const existing = slotMap.get(key);
+        if (existing) {
+          existing.barberIds.push(barber._id as string);
+        } else {
+          slotMap.set(key, { startsAt: s.startsAt, endsAt: s.endsAt, barberIds: [barber._id as string] });
+        }
+      }
+    }));
+
+    return Array.from(slotMap.values())
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+      .map(s => ({
+        startsAt: s.startsAt.toISOString(),
+        endsAt: s.endsAt.toISOString(),
+        availableBarberIds: s.barberIds,
+      }));
+  }
+
+  private async slotsForBarber(
+    barber: BarberDocument,
+    date: Date,
+    durationMin: number,
+  ): Promise<Array<{ startsAt: Date; endsAt: Date }>> {
+    const dayStart = startOfDay(date);
     const weekday = dayStart.getDay();
-    const slot = barber.schedules.find((s) => s.weekday === weekday);
-    if (!slot) return [];
+    const schedule = barber.schedules.find(s => s.weekday === weekday);
+    if (!schedule) return [];
 
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
     const [apptList, blockList] = await Promise.all([
       this.appts.find({
-        barberId: input.barberId,
+        barberId: barber._id,
         status: { $nin: ['CANCELLED', 'NO_SHOW'] },
         scheduledAt: { $lt: dayEnd },
         endsAt: { $gt: dayStart },
         ...this.tenantQ(),
       }),
       this.blocks.find({
-        barberId: input.barberId,
+        barberId: barber._id,
         startsAt: { $lt: dayEnd },
         endsAt: { $gt: dayStart },
         ...this.tenantQ(),
@@ -61,28 +107,28 @@ export class GetAvailabilityUseCase {
     ]);
 
     const occupied: Array<[Date, Date]> = [
-      ...apptList.map((a) => [a.scheduledAt, a.endsAt] as [Date, Date]),
-      ...blockList.map((b) => [b.startsAt, b.endsAt] as [Date, Date]),
+      ...apptList.map(a => [a.scheduledAt, a.endsAt] as [Date, Date]),
+      ...blockList.map(b => [b.startsAt, b.endsAt] as [Date, Date]),
     ];
 
-    const [sh, sm] = slot.startTime.split(':').map(Number);
-    const [eh, em_] = slot.endTime.split(':').map(Number);
+    const [sh, sm] = schedule.startTime.split(':').map(Number);
+    const [eh, em] = schedule.endTime.split(':').map(Number);
     const workStart = new Date(dayStart);
     workStart.setHours(sh, sm, 0, 0);
     const workEnd = new Date(dayStart);
-    workEnd.setHours(eh, em_, 0, 0);
+    workEnd.setHours(eh, em, 0, 0);
 
-    const slots: AvailabilitySlot[] = [];
+    const slots: Array<{ startsAt: Date; endsAt: Date }> = [];
     for (
       let cursor = workStart.getTime();
-      cursor + input.durationMin * 60_000 <= workEnd.getTime();
+      cursor + durationMin * 60_000 <= workEnd.getTime();
       cursor += SLOT_MINUTES * 60_000
     ) {
       const startsAt = new Date(cursor);
-      const endsAt = new Date(cursor + input.durationMin * 60_000);
+      const endsAt = new Date(cursor + durationMin * 60_000);
       if (startsAt.getTime() <= Date.now()) continue;
       const overlaps = occupied.some(([s, e]) => startsAt < e && endsAt > s);
-      if (!overlaps) slots.push({ startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() });
+      if (!overlaps) slots.push({ startsAt, endsAt });
     }
     return slots;
   }

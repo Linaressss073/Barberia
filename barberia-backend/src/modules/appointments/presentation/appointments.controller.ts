@@ -80,11 +80,12 @@ export class AppointmentsController {
   @Get('availability')
   @Roles(Role.Admin, Role.Receptionist, Role.Barber, Role.Customer)
   availability(
-    @Query('barberId', ParseUUIDPipe) barberId: string,
+    @Query('barberId') barberId: string,
     @Query('date') dateISO: string,
     @Query('durationMin', ParseIntPipe) durationMin: number,
   ) {
-    return this.availabilityUC.execute({ barberId, date: new Date(dateISO), durationMin });
+    const bid = barberId === 'any' ? 'any' : barberId;
+    return this.availabilityUC.execute({ barberId: bid, date: new Date(dateISO), durationMin });
   }
 
   @Get()
@@ -144,7 +145,7 @@ export class AppointmentsController {
 
     return this.bookUC.execute({
       customerId,
-      barberId: dto.barberId,
+      barberId: dto.barberId ?? null,
       scheduledAt: dto.scheduledAt,
       serviceIds: dto.serviceIds,
       source: dto.source ?? 'WEB',

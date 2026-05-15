@@ -261,10 +261,31 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
       const data = await apiFetch("/barbers?onlyActive=true&limit=50&page=1");
       state.allBarbers = data.items ?? data ?? [];
       grid.innerHTML = "";
-      if (state.allBarbers.length === 0) {
-        grid.innerHTML = '<div class="p-8 text-center text-base-500 text-sm col-span-full">No hay barberos disponibles.</div>';
-        return;
-      }
+
+      // "Sin preferencia" always first
+      const anyCard = document.createElement("div");
+      anyCard.dataset.id = "any";
+      anyCard.className = "barber-card cursor-pointer rounded-xl border-2 border-accent-500 bg-accent-900/20 p-4 hover:border-accent-400 transition-all select-none col-span-full sm:col-span-1";
+      anyCard.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="size-10 rounded-full bg-accent-900/60 flex items-center justify-center text-accent-400 text-lg shrink-0">✦</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-base-100 font-medium text-sm">Sin preferencia</p>
+            <p class="text-base-500 text-xs">El sistema asigna el barbero disponible</p>
+          </div>
+          <div class="size-5 rounded-full border-2 border-accent-500 bg-accent-500 flex items-center justify-center check-icon shrink-0">
+            <svg class="size-3 text-base-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          </div>
+        </div>`;
+      anyCard.addEventListener("click", () => selectBarber({ id: null, displayName: "Sin preferencia" }, anyCard));
+      grid.appendChild(anyCard);
+      // Pre-select "sin preferencia"
+      state.selectedBarberId = null;
+      state.selectedBarberName = "Sin preferencia";
+      document.getElementById("step2-next").disabled = false;
+
+      if (state.allBarbers.length === 0) return;
+
       state.allBarbers.forEach(barber => {
         const card = document.createElement("div");
         card.dataset.id = barber.id;
@@ -290,21 +311,25 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     document.querySelectorAll(".barber-card").forEach(c => {
       c.classList.remove("border-accent-500", "bg-accent-900/20");
       c.classList.add("border-base-700", "bg-base-800/40");
-      c.querySelector(".check-icon").className = "size-5 rounded-full border-2 border-base-600 check-icon shrink-0";
-      c.querySelector(".check-icon").innerHTML = "";
+      const ci = c.querySelector(".check-icon");
+      if (ci) { ci.className = "size-5 rounded-full border-2 border-base-600 check-icon shrink-0"; ci.innerHTML = ""; }
     });
-    state.selectedBarberId = barber.id;
+    state.selectedBarberId = barber.id ?? null;
     state.selectedBarberName = barber.displayName;
     card.classList.remove("border-base-700", "bg-base-800/40");
     card.classList.add("border-accent-500", "bg-accent-900/20");
-    card.querySelector(".check-icon").className = "size-5 rounded-full border-2 border-accent-500 bg-accent-500 flex items-center justify-center check-icon shrink-0";
-    card.querySelector(".check-icon").innerHTML = `<svg class="size-3 text-base-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+    const ci = card.querySelector(".check-icon");
+    if (ci) {
+      ci.className = "size-5 rounded-full border-2 border-accent-500 bg-accent-500 flex items-center justify-center check-icon shrink-0";
+      ci.innerHTML = `<svg class="size-3 text-base-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+    }
     document.getElementById("step2-next").disabled = false;
   }
 
   document.getElementById("step2-back").addEventListener("click", () => goStep(1));
   document.getElementById("step2-next").addEventListener("click", () => {
-    if (state.selectedBarberId) goStep(3);
+    goStep(3);
+    loadSlots();
   });
 
   // ── Step 3: Date & Time ──────────────────────────────────────────────────────
@@ -328,8 +353,9 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     document.getElementById("step3-next").disabled = true;
 
     const totalDuration = state.selectedServices.reduce((s, sv) => s + sv.durationMin, 0);
+    const barberParam = state.selectedBarberId ?? "any";
     try {
-      const slots = await apiFetch(`/appointments/availability?barberId=${state.selectedBarberId}&date=${date}T00:00:00.000Z&durationMin=${totalDuration}`);
+      const slots = await apiFetch(`/appointments/availability?barberId=${barberParam}&date=${date}T00:00:00.000Z&durationMin=${totalDuration}`);
       slotsGrid.innerHTML = "";
       const available = Array.isArray(slots) ? slots : (slots.slots ?? []);
       if (available.length === 0) {
@@ -440,10 +466,11 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     btn.textContent = "Reservando…";
     try {
       const body: Record<string, unknown> = {
-        barberId: state.selectedBarberId,
         scheduledAt: new Date(state.selectedSlot).toISOString(),
         serviceIds: state.selectedServices.map(s => s.id),
       };
+      // Only send barberId if a specific barber was chosen; backend auto-assigns when omitted
+      if (state.selectedBarberId) body.barberId = state.selectedBarberId;
 
       // Staff must send customerId; customers let the backend auto-resolve/create the profile
       if (!isCustomer) {
@@ -471,13 +498,9 @@ import DashboardLayout from "@/layouts/DashboardLayout.astro";
     const nameEl = document.getElementById("tenant-name");
     if (banner && tenantId) {
       banner.classList.remove("hidden");
-      // Try to resolve the name from the discover list
       import("@/lib/api").then(({ apiFetchPublic }) =>
-        apiFetchPublic<{ id: string; name: string; slug: string }[]>("/tenants/discover")
-          .then(list => {
-            const t = list.find(x => x.id === tenantId);
-            if (nameEl) nameEl.textContent = t?.name ?? tenantId;
-          })
+        apiFetchPublic<{ name: string }>(`/tenants/${tenantId}/public`)
+          .then(t => { if (nameEl) nameEl.textContent = t.name; })
           .catch(() => { if (nameEl) nameEl.textContent = tenantId; })
       );
     }

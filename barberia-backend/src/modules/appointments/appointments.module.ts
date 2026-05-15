@@ -15,6 +15,7 @@ import { RateAppointmentUseCase } from './application/rate-appointment.use-case'
 import { AppointmentsController } from './presentation/appointments.controller';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { CustomersModule } from '@modules/customers/customers.module';
+import { CustomerTenantsModule } from '@modules/customer-tenants/customer-tenants.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CustomersModule } from '@modules/customers/customers.module';
     ]),
     NotificationsModule,
     CustomersModule,
+    CustomerTenantsModule,
   ],
   controllers: [AppointmentsController],
   providers: [

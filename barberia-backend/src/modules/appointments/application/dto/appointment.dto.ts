@@ -25,7 +25,10 @@ export class BookAppointmentDto {
   @IsOptional()
   @IsUUID()
   customerId?: string;
-  @ApiProperty() @IsUUID() barberId!: string;
+  @ApiPropertyOptional({ description: 'ID del barbero. Si no se provee, el sistema auto-asigna el barbero disponible con menos citas.' })
+  @IsOptional()
+  @IsUUID()
+  barberId?: string;
   @ApiProperty() @Type(() => Date) @IsDate() scheduledAt!: Date;
   @ApiProperty({ type: [String] })
   @IsArray()

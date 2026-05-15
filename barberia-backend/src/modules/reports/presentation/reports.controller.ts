@@ -37,6 +37,11 @@ export class ReportsController {
     return this.svc.commissionsByBarber(new Date(from), new Date(to));
   }
 
+  @Get('summary')
+  summary(@Query('from') from: string, @Query('to') to: string) {
+    return this.svc.summary(new Date(from), new Date(to));
+  }
+
   @Get('customers/top')
   topCustomers(
     @Query('from') from: string,

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '@core/decorators/current-user.decorator';
 import { Public, Role, Roles } from '@core/decorators/roles.decorator';
@@ -19,6 +19,13 @@ export class TenantsController {
   @Get('discover')
   discover() {
     return this.tenants.listDiscover();
+  }
+
+  /** Detalle público de una barbería: info + servicios activos + barberos activos. */
+  @Public()
+  @Get(':id/public')
+  publicDetail(@Param('id') id: string) {
+    return this.tenants.findPublicDetail(id);
   }
 
   @Get('me')

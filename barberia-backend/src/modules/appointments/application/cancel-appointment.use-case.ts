@@ -7,6 +7,7 @@ import { AppointmentDoc, AppointmentDocument } from '../infrastructure/persisten
 import { CustomerDoc, CustomerDocument } from '@modules/customers/infrastructure/persistence/customer.schema';
 import { UserDoc, UserDocument } from '@modules/auth/infrastructure/persistence/user.schema';
 import { NotificationsService } from '@modules/notifications/application/notifications.service';
+import { pendingReminders } from './book-appointment.use-case';
 
 const MIN_CANCEL_LEAD_MS = 2 * 60 * 60 * 1000; // 2h
 
@@ -37,6 +38,10 @@ export class CancelAppointmentUseCase {
       { _id: input.id },
       { $set: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: input.reason ?? null } },
     );
+
+    // Cancel pending reminder timeouts
+    const timers = pendingReminders.get(input.id);
+    if (timers) { timers.forEach(clearTimeout); pendingReminders.delete(input.id); }
 
     void this.sendCancellationNotification(appt, input.reason);
   }

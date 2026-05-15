@@ -79,7 +79,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         statusCode: isUnique ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST,
         code: isUnique ? 'UNIQUE_VIOLATION' : 'DB_QUERY_FAILED',
         message: isUnique ? 'Duplicate key violation' : exception.message,
-        details: isUnique ? exception.message : undefined,
       };
     }
 

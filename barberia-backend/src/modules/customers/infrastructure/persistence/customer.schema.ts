@@ -11,7 +11,7 @@ export class CustomerDoc {
   @Prop({ type: String, default: null, index: true })
   userId!: string | null;
 
-  @Prop({ type: String, default: null, sparse: true, unique: true })
+  @Prop({ type: String, default: null })
   document!: string | null;
 
   @Prop({ type: String, required: true, index: true })
@@ -42,3 +42,5 @@ export class CustomerDoc {
 export const CustomerSchema = SchemaFactory.createForClass(CustomerDoc);
 // A user can have one profile per barbershop (tenant)
 CustomerSchema.index({ userId: 1, tenantId: 1 }, { unique: true, sparse: true });
+// Only index non-null document values to allow multiple null-document customers
+CustomerSchema.index({ document: 1 }, { unique: true, partialFilterExpression: { document: { $type: 'string' } } });

@@ -250,7 +250,7 @@ export class BookAppointmentUseCase {
 
   private async sendBookingNotification(
     input: BookAppointmentInput,
-    result: { id: string; endsAt: Date; totalCents: number },
+    result: { id: string; endsAt: Date; totalCents: number; barberId: string },
   ): Promise<void> {
     try {
       const customer = await this.customers.findOne({ _id: input.customerId, deletedAt: null, ...this.tenantQ() });
@@ -259,7 +259,7 @@ export class BookAppointmentUseCase {
       if (!user?.email) return;
 
       const [barber, svcs] = await Promise.all([
-        this.barbers.findOne({ _id: input.barberId ?? result['barberId'], ...this.tenantQ() }),
+        this.barbers.findOne({ _id: input.barberId ?? result.barberId, ...this.tenantQ() }),
         this.services.find({ _id: { $in: input.serviceIds }, ...this.tenantQ() }),
       ]);
 
